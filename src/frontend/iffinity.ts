@@ -10,9 +10,13 @@ $(function () {
         },
         $("#iff-story-data").data("version"),
         $(".iff-snippet-data"),
-        $("#iff-story-code").html()
+        $(".iff-author-script"),
+        $(".iff-author-style"),
+        $("#iff-story-code").html(),
+        $("#iff-global-code").html()
     );
 
+    // HTML cleanup
     $("#iff-story-data").remove();
 
     story.start();

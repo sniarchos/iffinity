@@ -4,8 +4,8 @@ import * as cheerio from "cheerio";
 import { readAllHtmlAndEjsFilesUnder } from "./crawler";
 import { performInitialSanityChecks } from "./checks";
 import { loadConfigFile } from "./config";
-import { injectTagsScriptsAndStyles } from "./tags";
-import { injectSnippetCodeAndStyle } from "./snippets";
+import { parseTagsScriptsAndStyles } from "./tags";
+import { parseSnippetCodeAndStyle } from "./snippets";
 import yargs from "yargs";
 import { bold, green, red } from "ansis/colors";
 import { encode } from "html-entities";
@@ -51,6 +51,9 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
 
     let storyDataElem = $('<div id="iff-story-data"></div>');
     let foundTestingSnippet = false;
+    const scriptsContents = new Map<string, string>();
+    const stylesContents = new Map<string, string>();
+
     userSnippets.each((_, snippet) => {
         const snippetElem = $(snippet);
 
@@ -63,6 +66,8 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
 
         for (const k in snippetElem.attr())
             snippetDataElem.attr("data-" + k, snippetElem.attr(k));
+        snippetDataElem.attr("data-all-scripts", "");
+        snippetDataElem.attr("data-all-styles", "");
 
         if (argv.testFrom) {
             if (snippetDataElem.data("name") === argv.testFrom) {
@@ -79,15 +84,30 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
         }
 
         try {
-            // snippet-specific code and style
-            injectSnippetCodeAndStyle(snippetDataElem, projectRootPath);
+            // tag-related code and style
+            const [snippetTagScripts, snippetTagStyles] =
+                parseTagsScriptsAndStyles(
+                    snippetDataElem,
+                    config,
+                    projectRootPath
+                );
+            snippetTagScripts.forEach((value, key) =>
+                scriptsContents.set(key, value)
+            );
+            snippetTagStyles.forEach((value, key) =>
+                stylesContents.set(key, value)
+            );
 
-            // tag-related code and style (it is prepended
-            // so it will go before the snippet-specific code and style)
-            injectTagsScriptsAndStyles(
+            // snippet-specific code and style
+            const [snippetScripts, snippetStyles] = parseSnippetCodeAndStyle(
                 snippetDataElem,
-                config,
                 projectRootPath
+            );
+            snippetScripts.forEach((value, key) =>
+                scriptsContents.set(key, value)
+            );
+            snippetStyles.forEach((value, key) =>
+                stylesContents.set(key, value)
             );
         } catch (e) {
             console.error(
@@ -99,6 +119,16 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
             console.error("Aborting.");
             process.exit(1);
         }
+
+        // replace data-scripts and data-styles with data-all-scripts and data-all-styles
+        // (this also protects user's -absolute- paths from being exposed in the final HTML)
+        const allScripts = snippetDataElem.attr("data-all-scripts") as string;
+        snippetDataElem.attr("data-scripts", allScripts);
+        snippetDataElem.removeAttr("data-all-scripts");
+
+        const allStyles = snippetDataElem.attr("data-all-styles") as string;
+        snippetDataElem.attr("data-styles", allStyles);
+        snippetDataElem.removeAttr("data-all-styles");
 
         storyDataElem.append(snippetDataElem);
     });
@@ -197,8 +227,10 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
             projectRootPath,
             config.scripts.global
         );
-        outputHTML(".iff-snippet-data").prepend(
-            `<%\n${encode(fullGlobalCode)}\n%>\n\n`
+        outputHTML("#iff-story-data").append(
+            `<div id="iff-global-code" hidden="">${encode(
+                fullGlobalCode
+            )}</div>`
         );
     }
 
@@ -212,6 +244,20 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
         );
         outputHTML("head").append(`<style>${fullStoryStyle}</style>`);
     }
+
+    /**
+     * user scripts & styles
+     */
+    scriptsContents.forEach((value, key) =>
+        outputHTML("#iff-story-data").append(
+            `<div class="iff-author-script" data-src="${key}" hidden="">${value}</div>`
+        )
+    );
+    stylesContents.forEach((value, key) =>
+        outputHTML("#iff-story-data").append(
+            `<div class="iff-author-style" data-src="${key}" hidden="">${value}</div>`
+        )
+    );
 
     fs.writeFile(outputFilePath, outputHTML.html(), (err) => {
         if (err) {

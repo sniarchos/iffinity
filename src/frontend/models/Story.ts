@@ -14,17 +14,38 @@ export class Story implements IStory {
     funcs: any = {};
     checkpoint?: Checkpoint = undefined;
     scode?: string;
+    gcode?: string;
+    authorScripts: Map<string, string> = new Map();
+    authorStyles: Map<string, string> = new Map();
 
     constructor(
         title: string,
         author: { name: string; email?: string },
         version: string,
         snippets: JQuery<HTMLElement>,
-        scode?: string
+        authorScriptsElems: JQuery<HTMLElement>,
+        authorStylesElems: JQuery<HTMLElement>,
+        scode?: string,
+        gcode?: string
     ) {
         this.title = title;
         this.author = author;
         this.version = version;
+
+        authorScriptsElems.each((_, e) => {
+            const authorScript = $(e);
+            const key = authorScript.data("src");
+            const value = decode(authorScript.html());
+            this.authorScripts.set(key, value);
+        });
+
+        authorStylesElems.each((_, e) => {
+            const authorStyle = $(e);
+            const key = authorStyle.data("src");
+            const value = decode(authorStyle.html());
+            this.authorStyles.set(key, value);
+        });
+
         this.snippets = snippets
             .map((i, e) => {
                 const snippet = $(e);
@@ -34,11 +55,19 @@ export class Story implements IStory {
                     snippet.data("name"),
                     snippet.data("tags")?.trim().split(/ +/) ?? [],
                     snippet.data("start") !== undefined,
-                    decode(snippet.html())
+                    decode(snippet.html()),
+                    snippet.data("scripts") === ""
+                        ? []
+                        : snippet.data("scripts").trim().split(";"),
+                    snippet.data("styles") === ""
+                        ? []
+                        : snippet.data("styles").trim().split(";")
                 );
             })
             .get();
+
         this.scode = decode(scode);
+        this.gcode = decode(gcode);
     }
 
     getSnippet(id: string | number): ISnippet | undefined {
@@ -86,8 +115,19 @@ export class Story implements IStory {
             f: this.funcs,
         };
         let renderedSnippetHTML = ejs.render(
-            // should we render the story code? (only once at the beginning)
-            (this.scode ? "<% " + this.scode + "%>\n" : "") + snippet.source,
+            // render the {tag,script}-specific styles
+            snippet.styles
+                .map((s) => "<style>" + this.authorStyles.get(s) + "</style>")
+                .join("\n") +
+                // render the story code (only once at the beginning, if it exists)
+                (this.scode ? "<% " + this.scode + "%>\n" : "") +
+                // render the global code (always, if it exists)
+                (this.gcode ? "<% " + this.gcode + "%>\n" : "") +
+                // render the {tag,script}-specific scripts
+                snippet.scripts
+                    .map((s) => "<% " + this.authorScripts.get(s) + "%>")
+                    .join("\n") +
+                snippet.source,
             exposedData
         );
         this.scode = undefined;

@@ -4,4 +4,6 @@ export interface ISnippet {
     tags: string[];
     start: boolean;
     source: string;
+    scripts: string[];
+    styles: string[];
 }

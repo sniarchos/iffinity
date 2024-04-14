@@ -5,59 +5,95 @@ import * as cheerio from "cheerio";
 import { Config, asArray } from "../types/Config";
 import { encode } from "html-entities";
 
-function injectTagScriptsAndStyles(
+function parseTagScriptsAndStyles(
     snippetDataElem: cheerio.Cheerio<cheerio.Element>,
     tagList: string,
     config: Config,
     projectRootPath: string,
     scripts: boolean
-) {
+): Map<string, string> {
     const tagRules = scripts ? config.scripts?.tags : config.styles?.tags;
-    if (!tagRules) return;
-    for (const tagRule of tagRules.reverse()) {
+    if (!tagRules) return new Map<string, string>();
+
+    const tagFiles: string[] = [];
+    const tagFileContents = new Map<string, string>();
+
+    for (const tagRule of tagRules) {
         if (evaluateTagRule(tagRule.rule, tagList)) {
             const files = asArray(tagRule.files);
-            for (const file of files.reverse()) {
+            for (const file of files) {
                 const filePath = path.join(projectRootPath, file);
                 if (!fs.existsSync(filePath))
                     console.warn(
                         `File "${filePath}" for tag rule "${tagRule}" not found, skipping...`
                     );
-                if (scripts)
-                    snippetDataElem.prepend(
-                        `<% ${encode(fs.readFileSync(filePath, "utf8"))} %>`
+                else {
+                    const fileContent = fs.readFileSync(filePath, "utf8");
+                    const relFilePath = path.relative(
+                        projectRootPath,
+                        filePath
                     );
-                else
-                    snippetDataElem.prepend(
-                        `<style>
-                        ${fs.readFileSync(filePath, "utf8")}
-                        </style>`
-                    );
+                    tagFiles.push(relFilePath);
+                    tagFileContents.set(relFilePath, encode(fileContent));
+                }
             }
         }
     }
+
+    if (scripts) {
+        const allScripts = snippetDataElem.attr("data-all-scripts") as string;
+        snippetDataElem.attr(
+            "data-all-scripts",
+            (allScripts ? allScripts + ";" : "") + tagFiles.join(";")
+        );
+    } else {
+        const allStyles = snippetDataElem.attr("data-all-styles") as string;
+        snippetDataElem.attr(
+            "data-all-styles",
+            (allStyles ? allStyles + ";" : "") + tagFiles.join(";")
+        );
+    }
+
+    return tagFileContents;
 }
 
-export function injectTagsScriptsAndStyles(
+/**
+ * Does 2 things (similar to snippets/parseSnippetCodeAndStyle):
+ * 1. Creates 2 lists of scripts and styles filenames
+ *    from the snippet's data attributes and replaces
+ *    the respective data attributes with these 2 lists.
+ * 2. Creates 2 maps (one for scripts and one for styles)
+ *    with the content of the files in the lists, so that
+ *    they can be used by the frontend for "lazy" appending
+ *    of the scripts and styles to the snippets.
+ *
+ * @returns a tuple with 2 maps: one for scripts and one for styles
+ *          from the filenames to the file contents.
+ */
+export function parseTagsScriptsAndStyles(
     snippetDataElem: cheerio.Cheerio<cheerio.Element>,
     config: Config,
     projectRootPath: string
-) {
+): [Map<string, string>, Map<string, string>] {
     const tagList = (snippetDataElem.data("tags") as string) || "";
-    injectTagScriptsAndStyles(
+
+    const snippetTagScripts = parseTagScriptsAndStyles(
         snippetDataElem,
         tagList,
         config,
         projectRootPath,
         true
     );
-    injectTagScriptsAndStyles(
+
+    const snippetTagStyles = parseTagScriptsAndStyles(
         snippetDataElem,
         tagList,
         config,
         projectRootPath,
         false
     );
+
+    return [snippetTagScripts, snippetTagStyles];
 }
 
 class TokenizationError extends Error {}
@@ -237,7 +273,7 @@ function evaluateExpressionTree(
  * evaluateTagRule("a && b", "a"); // false
  * evaluateTagRule("a && b b", "a b"); // throws TokenizationError
  */
-export function evaluateTagRule(rule: string, tagList: string): boolean {
+function evaluateTagRule(rule: string, tagList: string): boolean {
     const tags = tagList
         .trim()
         .split(/ +/)
