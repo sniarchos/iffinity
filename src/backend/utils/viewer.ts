@@ -58,7 +58,9 @@ function showAllSnippets(
         .map((file) => path.relative(rootDir, file))
         .forEach((file) => {
             tree[file] = {};
-            const $ = cheerio.load(fs.readFileSync(file, "utf8"));
+            const $ = cheerio.load(
+                fs.readFileSync(path.join(rootDir, file), "utf8")
+            );
             $("snippet").each((_, snippet) => {
                 const name = $(snippet).attr("name");
                 const tags = str2list($(snippet).attr("tags"));
