@@ -7,7 +7,10 @@ import { green, red, yellow } from "ansis/colors";
 
 function readConfigFile(configFilePath: string): Config {
     try {
-        return JSON.parse(fs.readFileSync(configFilePath, "utf8")) as Config;
+        // strip a UTF-8 BOM: JSON.parse rejects it, and Windows editors add
+        // one by default, which otherwise surfaces as "malformed config file"
+        const raw = fs.readFileSync(configFilePath, "utf8").replace(/^﻿/, "");
+        return JSON.parse(raw) as Config;
     } catch (error) {
         console.error(
             `${red(

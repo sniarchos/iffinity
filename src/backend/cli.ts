@@ -14,6 +14,7 @@ $0 <command> --help/-h (e.g. $0 show --help)
 Usage: $0 [command] [commandOptions]`;
 
 yargs
+    .scriptName("ifc")
     .strict()
     .usage(usageStr)
     .version(
@@ -254,6 +255,12 @@ yargs
                     alias: "g",
                     describe: "Show the snippet graph of the project",
                     type: "boolean",
+                })
+                .option("open", {
+                    describe:
+                        "Open the generated snippet graph in your browser (--no-open to skip)",
+                    type: "boolean",
+                    default: true,
                 })
                 .check((argv) => {
                     if (Object.keys(argv).length === 2) {

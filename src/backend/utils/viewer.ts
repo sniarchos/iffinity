@@ -1,12 +1,12 @@
 import yargs from "yargs";
 import fs from "fs";
+import { spawn } from "child_process";
 import path from "path";
 import * as cheerio from "cheerio";
 import { readAllHtmlAndEjsFilesUnder } from "./crawler";
 import { printTree } from "flexible-tree-printer";
 import { green, bold, yellowBright, blue, yellow } from "ansis/colors";
 import { loadConfigFile } from "./config";
-import puppeteer from "puppeteer";
 
 function str2list(str: string | undefined): string | undefined {
     return str?.trim().split(/ +/).join(", ");
@@ -124,137 +124,214 @@ function showAllTags(
     });
 }
 
-function buildSnippetGraph(snippetFiles: string[]): any {
-    const graph: any = {
-        nodes: [],
-        edges: [],
-    };
+type GraphNode = {
+    data: { id: string; kind: "start" | "snippet" | "missing" };
+};
+type GraphEdge = { data: { source: string; target: string; broken: boolean } };
+type Graph = { nodes: GraphNode[]; edges: GraphEdge[] };
+
+function buildSnippetGraph(snippetFiles: string[]): Graph {
+    const defined = new Set<string>();
+    const starts = new Set<string>();
+    const links: Array<[string, string]> = [];
 
     snippetFiles.forEach((file) => {
         const $ = cheerio.load(fs.readFileSync(file, "utf8"));
         $("snippet").each((_, snippet) => {
             const name = $(snippet).attr("name") as string;
-            const snippetHtml = $(snippet).html() as string;
-            const linkedSnippets = [];
+            if (!name) return;
+            defined.add(name);
+            if ($(snippet).attr("start") !== undefined) starts.add(name);
+
+            const snippetHtml = ($(snippet).html() as string) ?? "";
             const regex = /\[\[([^\]]*)\]\]/g;
             let match;
             while ((match = regex.exec(snippetHtml))) {
-                const parts = match[1].split("|");
-                if (parts.length === 1) {
-                    // case [[<snippet name>]]
-                    linkedSnippets.push(parts[0]);
-                } else if (parts.length === 2) {
-                    // case [[<text>|<snippet name>]]
-                    linkedSnippets.push(parts[1]);
-                }
-                // case [[<text>|<snippet name>|<id>]] is not supported
-                // case [[<text>||<id>]] is indecisive whether it is a link or not
+                const parts = match[1].split("|").map((p) => p.trim());
+                // [[Name]] and [[text|Name]] are transitions; [[text||#id]] is not
+                if (parts.length === 1) links.push([name, parts[0]]);
+                else if (parts.length === 2) links.push([name, parts[1]]);
             }
-            // also search for <iff-link> elements inside the snippet
+            // transitions performed in code, declared with <iff-link>
             $(snippet)
                 .find("iff-link")
                 .each((_, link) => {
-                    const linkedSnippet = $(link).text();
-                    if (linkedSnippet) linkedSnippets.push(linkedSnippet);
+                    const target = $(link).text().trim();
+                    if (target) links.push([name, target]);
                 });
-
-            graph.nodes.push({
-                data: {
-                    id: name,
-                    color:
-                        $(snippet).attr("start") !== undefined
-                            ? "blue"
-                            : "green",
-                },
-            });
-
-            linkedSnippets.forEach((linkedSnippet) => {
-                graph.edges.push({
-                    data: {
-                        source: name,
-                        target: linkedSnippet,
-                    },
-                });
-            });
         });
     });
 
-    return graph;
+    const referenced = new Set(links.map(([, t]) => t));
+    const missing = [...referenced].filter((t) => !defined.has(t));
+
+    const nodes: GraphNode[] = [
+        ...[...defined].map(
+            (id) =>
+                ({
+                    data: { id, kind: starts.has(id) ? "start" : "snippet" },
+                }) as GraphNode
+        ),
+        ...missing.map(
+            (id) => ({ data: { id, kind: "missing" } }) as GraphNode
+        ),
+    ];
+
+    const edges: GraphEdge[] = links.map(([source, target]) => ({
+        data: { source, target, broken: !defined.has(target) },
+    }));
+
+    return { nodes, edges };
 }
 
-async function showSnippetGraph(snippetFiles: string[]) {
-    const browser = await puppeteer.launch({ headless: false });
-    const page = await browser.pages().then((pages) => pages[0]);
-
-    await page.setViewport({
-        width: await page.evaluate(() => window.screen.width),
-        height: await page.evaluate(() => window.screen.height),
-    });
-
-    // Define your graph data
-    const graphData = buildSnippetGraph(snippetFiles);
-
-    // Load Cytoscape.js and set up the graph
-    await page.setContent(`
-          <html>
-            <head>
-                <script src="https://unpkg.com/weaverjs@1.2.0/dist/weaver.min.js"></script>
-                <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
-                <script src="https://cdn.jsdelivr.net/npm/cytoscape-spread@3.0.0/cytoscape-spread.min.js"></script>
-                <style>
-                    body {
-                        font-family: helvetica;
-                        font-size: 14px;
-                    }
-
-                    #cy {
-                        width: 100%;
-                        height: 100%;
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        z-index: 999;
-                    }
-
-                    h1 {
-                        opacity: 0.5;
-                        font-size: 1em;
-                    }
-                </style>
-            </head>
-            <body>
-              <div id="cy"></div>
-            </body>
-          </html>
-        `);
-
-    // Draw your graph when the page is ready
-    await page.evaluate((graphData) => {
-        //@ts-ignore
-        const cy = cytoscape({
-            container: document.getElementById("cy"),
-            elements: graphData,
-            style: [
-                {
-                    selector: "node",
-                    style: {
-                        "background-color": "data(color)",
-                        label: "data(id)",
-                    },
-                },
-                {
-                    selector: "edge",
-                    style: {
-                        width: 3,
-                        "line-color": "#ccc",
-                        "target-arrow-color": "#ccc",
-                        "target-arrow-shape": "triangle",
-                        "curve-style": "bezier",
-                    },
-                },
-            ],
+/**
+ * Open a file with the OS default handler. Best effort: if it fails, the
+ * caller has already printed the path, which is the right outcome over SSH
+ * and in CI anyway.
+ */
+function openInDefaultApp(filePath: string): void {
+    const spec: [string, string[]] =
+        process.platform === "win32"
+            ? ["cmd", ["/c", "start", "", filePath]]
+            : process.platform === "darwin"
+              ? ["open", [filePath]]
+              : ["xdg-open", [filePath]];
+    try {
+        const child = spawn(spec[0], spec[1], {
+            detached: true,
+            stdio: "ignore",
         });
-    }, graphData);
+        child.on("error", () => undefined);
+        child.unref();
+    } catch {
+        // path already reported
+    }
+}
+
+function renderGraphPage(title: string, graph: Graph): string {
+    const nSnippets = graph.nodes.filter(
+        (n) => n.data.kind !== "missing"
+    ).length;
+    const nBroken = graph.edges.filter((e) => e.data.broken).length;
+    const stats =
+        nSnippets +
+        " snippets &middot; " +
+        graph.edges.length +
+        " links" +
+        (nBroken > 0 ? " &middot; " + nBroken + " broken" : "");
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${title} &mdash; snippet graph</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<style>
+  :root {
+    --bg:#15181c; --panel:#1d2126; --line:#2b3138;
+    --ink:#e7e9ec; --muted:#8d959e;
+    --start:#d9932f; --snippet:#4f9d69; --missing:#d4574e;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--bg);color:var(--ink);
+    font:14px/1.5 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;
+  }
+  header{
+    display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap;
+    padding:.85rem 1.15rem;border-bottom:1px solid var(--line);background:var(--panel);
+  }
+  h1{margin:0;font-size:1rem;font-weight:600;letter-spacing:-.01em}
+  .stats{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem;color:var(--muted)}
+  .legend{margin-left:auto;display:flex;gap:1rem;font-size:.78rem;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:.4rem}
+  .dot{width:.62rem;height:.62rem;border-radius:50%;display:inline-block}
+  #cy{flex:1;min-height:0}
+  footer{
+    padding:.5rem 1.15rem;border-top:1px solid var(--line);
+    font-size:.72rem;color:var(--muted);background:var(--panel);
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>${title}</h1>
+  <span class="stats">${stats}</span>
+  <span class="legend">
+    <span><i class="dot" style="background:var(--start)"></i>start</span>
+    <span><i class="dot" style="background:var(--snippet)"></i>snippet</span>
+    <span><i class="dot" style="background:var(--missing)"></i>missing</span>
+  </span>
+</header>
+<div id="cy"></div>
+<footer>Drag to pan, scroll to zoom. Red nodes are linked to but never defined.</footer>
+<script>
+  var elements = ${JSON.stringify(graph)};
+  cytoscape({
+    container: document.getElementById("cy"),
+    elements: elements,
+    layout: { name: "cose", animate: false, padding: 40, nodeRepulsion: 12000 },
+    style: [
+      { selector: "node", style: {
+          "background-color": "#4f9d69", label: "data(id)",
+          color: "#e7e9ec", "font-size": 10,
+          "font-family": "ui-monospace, monospace",
+          "text-valign": "center", "text-halign": "center",
+          "text-outline-color": "#15181c", "text-outline-width": 2,
+          width: 18, height: 18 } },
+      { selector: 'node[kind = "start"]', style: {
+          "background-color": "#d9932f", width: 26, height: 26,
+          "font-size": 12 } },
+      { selector: 'node[kind = "missing"]', style: {
+          "background-color": "#d4574e", "border-width": 2,
+          "border-color": "#d4574e", "border-opacity": 0.35 } },
+      { selector: "edge", style: {
+          width: 1.2, "line-color": "#2b3138",
+          "target-arrow-color": "#2b3138", "target-arrow-shape": "triangle",
+          "arrow-scale": 0.8, "curve-style": "bezier" } },
+      { selector: "edge[?broken]", style: {
+          "line-color": "#d4574e", "target-arrow-color": "#d4574e",
+          "line-style": "dashed" } }
+    ]
+  });
+</script>
+</body>
+</html>
+`;
+}
+
+function showSnippetGraph(
+    snippetFiles: string[],
+    title: string,
+    projectRootPath: string,
+    open: boolean
+): void {
+    const graph = buildSnippetGraph(snippetFiles);
+    const outPath = path.join(projectRootPath, "snippet-graph.html");
+    fs.writeFileSync(outPath, renderGraphPage(title, graph), "utf8");
+
+    console.log(`Snippet graph written to ${bold(outPath)}`);
+
+    const broken = graph.edges.filter((e) => e.data.broken);
+    if (broken.length > 0) {
+        console.warn(
+            `${yellow("Warning:")} ${
+                broken.length
+            } link(s) point to snippets that do not exist:`
+        );
+        const seen = new Set<string>();
+        for (const e of broken) {
+            const key = `${e.data.source} -> ${e.data.target}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            console.warn(`  ${e.data.source} ${yellow("->")} ${e.data.target}`);
+        }
+    }
+
+    if (open) openInDefaultApp(outPath);
 }
 
 export async function showProjectDetails(argv: yargs.Arguments): Promise<void> {
@@ -277,5 +354,11 @@ export async function showProjectDetails(argv: yargs.Arguments): Promise<void> {
         showAllTags(snippetFiles, config.story.title, projectRootPath);
 
     // option -g
-    if (argv.graph) await showSnippetGraph(snippetFiles);
+    if (argv.graph)
+        showSnippetGraph(
+            snippetFiles,
+            config.story.title,
+            projectRootPath,
+            argv.open !== false
+        );
 }
