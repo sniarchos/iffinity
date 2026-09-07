@@ -1,1 +1,11 @@
+* text=auto eol=lf
+
+# Binary assets: never touch, never diff as text
+*.png binary
+*.ico binary
+*.ttf binary
+
+*.sh text eol=lf
+
+# Keep examples out of GitHub's language statistics
 examples linguist-detectable=false
