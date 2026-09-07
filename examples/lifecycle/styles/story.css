@@ -1,0 +1,78 @@
+body {
+    background: #15181c;
+    color: #e7e9ec;
+    font: 16px/1.6 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 2.5rem 1.25rem;
+}
+
+#iff-story {
+    max-width: 34rem;
+    margin: 0 auto;
+}
+
+h1 {
+    font-size: 1.5rem;
+    margin: 0 0 1rem;
+}
+
+h2 {
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #8d959e;
+    margin: 2rem 0 0.5rem;
+}
+
+a {
+    color: #d9932f;
+    text-underline-offset: 0.15em;
+}
+
+code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.86em;
+    background: #1d2126;
+    border: 1px solid #2b3138;
+    border-radius: 2px;
+    padding: 0.08em 0.32em;
+}
+
+.banner {
+    border-left: 2px solid #4f9d69;
+    padding-left: 0.9rem;
+    color: #a9b0ad;
+}
+
+.note {
+    font-size: 0.87rem;
+    color: #8d959e;
+}
+
+.verdict {
+    font-weight: 600;
+    border: 1px solid #2b3138;
+    border-radius: 3px;
+    padding: 0.7rem 0.9rem;
+    background: #1d2126;
+}
+
+.verdict.pass {
+    color: #4f9d69;
+    border-color: #4f9d69;
+}
+
+.verdict.fail {
+    color: #d4574e;
+    border-color: #d4574e;
+}
+
+.log {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: #a9b0ad;
+}
+
+.log li {
+    margin-bottom: 0.25rem;
+}

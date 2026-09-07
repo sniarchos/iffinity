@@ -1,0 +1,104 @@
+<snippet name="Banner">
+    <p class="banner">
+        This paragraph is rendered <em>inline</em> by another snippet, via
+        <code>story.renderSnippet()</code>.
+    </p>
+</snippet>
+
+<snippet name="Start" start>
+    <%
+        $(function () {
+            // A snippet-owned timer. Without a teardown hook this keeps
+            // firing forever after you navigate away, against DOM nodes
+            // that no longer exist.
+            const timer = setInterval(function () {
+                s.ticks++;
+                $("#ticks").text(s.ticks);
+            }, 200);
+
+            // Hand the cleanup to the engine: it runs once, when this
+            // snippet is left, and is then discarded.
+            story.onLeave(function () {
+                clearInterval(timer);
+            });
+        });
+    %>
+
+    <h1>Lifecycle</h1>
+
+    <%- story.renderSnippet("Banner") %>
+
+    <p>
+        A timer owned by this snippet has ticked <strong id="ticks">0</strong>
+        times.
+    </p>
+
+    <p>
+        Leave, and the next snippet checks whether it actually stopped:
+        [[<strong>Walk away</strong>|Check]]
+    </p>
+
+    <p class="note">
+        That link's text is wrapped in <code>&lt;strong&gt;</code> on purpose.
+        A handler reading <code>event.target</code> instead of
+        <code>event.currentTarget</code> would see the inner element and the
+        link would do nothing.
+    </p>
+
+    <p>
+        Story code has run <strong><%- s.storyCodeRuns %></strong> time(s) &mdash;
+        it must be 1, even though this snippet renders another one inline.
+    </p>
+</snippet>
+
+<snippet name="Check">
+    <%
+        $(function () {
+            const before = s.ticks;
+            $("#before").text(before);
+
+            // If onLeave did its job the counter is frozen; sample again
+            // after a second, by which point a live 200ms timer would have
+            // advanced it by about five.
+            setTimeout(function () {
+                const after = s.ticks;
+                $("#after").text(after);
+
+                const stopped = after === before;
+                $("#verdict")
+                    .text(
+                        stopped
+                            ? "PASS - the timer stopped when the snippet was left"
+                            : "FAIL - the timer is still running (" +
+                                  (after - before) +
+                                  " ticks leaked)"
+                    )
+                    .addClass(stopped ? "pass" : "fail");
+
+                $("#log").html(
+                    s.eventLog.map(function (line) {
+                        return "<li><code>" + line + "</code></li>";
+                    }).join("")
+                );
+            }, 1000);
+        });
+    %>
+
+    <h1>Check</h1>
+
+    <p>
+        Tick count on arrival: <strong id="before">?</strong><br />
+        Tick count one second later: <strong id="after">?</strong>
+    </p>
+
+    <p id="verdict" class="verdict">measuring&hellip;</p>
+
+    <h2>Events seen so far</h2>
+    <ul id="log" class="log"></ul>
+
+    <p>
+        Story code has run <strong><%- s.storyCodeRuns %></strong> time(s).
+    </p>
+
+    <p>[[Go back|Start]]</p>
+</snippet>

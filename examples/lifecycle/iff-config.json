@@ -1,0 +1,15 @@
+{
+    "story": {
+        "title": "Lifecycle",
+        "author": {
+            "name": "Sotiris Niarchos"
+        },
+        "version": "1.0.0"
+    },
+    "scripts": {
+        "story": "scripts/story.js"
+    },
+    "styles": {
+        "story": "styles/story.css"
+    }
+}
