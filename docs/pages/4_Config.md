@@ -177,3 +177,27 @@ And this is the configuration file of the [convoluted example](https://github.co
     }
 }
 ```
+
+## The `strictLinks` option
+
+Every time it compiles, iffinity checks that each snippet link points at a snippet that
+actually exists, and reports the ones that do not:
+
+```
+Warning: 2 link(s) point to snippets that do not exist:
+  The Vault <- linked from Corridor, Stairwell
+  Epilogue  <- linked from Chapter 7
+```
+
+Links whose target is computed at render time (e.g. `[[Continue|<%- dest %>]]`) cannot be
+checked and are skipped; the summary line says how many were skipped.
+
+By default a broken link is a warning, so a half-written story still compiles. Set
+`strictLinks` to `true` to make it an error that aborts the build &mdash; useful in CI:
+
+```json
+{
+    "strictLinks": true
+}
+```
+

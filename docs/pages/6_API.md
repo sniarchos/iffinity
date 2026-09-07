@@ -58,6 +58,21 @@ It also contains the following methods:
 |`createCheckpoint()`||Caches the current state and history as a checkpoint, so that the author/user can return to it. A subsequent call to `createCheckpoint()` overwrites the previously stored checkpoint.|
 |`restoreCheckpoint(restoreHistory = false, jumpToCheckpoint = true, addToHistory = true)`|`restoreHistory` dictates whether the story's history should be restored (or just the state), `jumpToCheckpoint` controls whether to go to the snippet where the checkpoint was created or to stay at the current snippet, and `addToHistory` dictates whether the snippet that will be shown after restoring the checkpoint will be added to the story's history. Returns `true` if a checkpoint existed and was restored, and `false` if there was no checkpoint. ||
 
+## Inspecting a story from the browser console
+
+The running story is also available as `window.story`, so you can poke at a story while
+developing it without adding temporary snippets:
+
+```js
+story.state                    // everything in `s`
+story.history                  // snippet IDs visited so far
+story.snippets.map(s => s.name)
+story.showSnippet("Chapter 3") // jump straight to a scene
+```
+
+This is a development convenience. Inside snippet code you already have `story`, `snippet`,
+`s` and `f` in scope &mdash; use those rather than reaching through `window`.
+
 ## Snippet lifecycle events
 
 The engine fires two events on `window` around every snippet change. Both are

@@ -49,9 +49,11 @@ Usage: ifc [command] [commandOptions]
 Commands:
   ifc compile [options]  Compile the project in the given directory to a single
                          HTML file                                     [default]
+  ifc watch [options]    Recompile the project whenever a source file changes
   ifc init               Create a new iffinity project in the current directory
   ifc edit [options]     Edit the configuration file of the project
   ifc show [options]     Show several project details
+  ifc completion         Generate a shell completion script
 
 Options:
   -p, --projectRoot  The root directory of the project (if not specified, the

@@ -26,9 +26,11 @@ Usage: ifc [command] [commandOptions]
 Commands:
   ifc compile [options]  Compile the project in the given directory to a single
                          HTML file                                     [default]
+  ifc watch [options]    Recompile the project whenever a source file changes
   ifc init               Create a new iffinity project in the current directory
   ifc edit [options]     Edit the configuration file of the project
   ifc show [options]     Show several project details
+  ifc completion         Generate a shell completion script
 
 Options:
   -p, --projectRoot  The root directory of the project (if not specified, the
@@ -161,6 +163,42 @@ Options:
 ```
 
 The `show` commands aims to help the user gain insight on their project, especially as it grows larger and larger. It's 3 main options as of v0.2.0 are the following:
+
+## `ifc completion`
+
+Prints a shell completion script for `ifc`. Add it to your shell config to get tab
+completion for commands and options:
+
+```
+$ ifc completion >> ~/.bashrc
+```
+
+## `ifc watch`
+
+Recompiling by hand after every edit gets old quickly on a project with hundreds of
+snippets. `ifc watch` rebuilds whenever a source file changes:
+
+```
+$ ifc watch
+Watching /home/sotiris/my-story for changes.
+Press Ctrl+C to stop.
+
+[14:22:05] initial build
+...
+Rendered game saved to My_Story.html. Enjoy!
+
+[14:22:31] changed: snippets/chapter-1.ejs
+...
+Rendered game saved to My_Story.html. Enjoy!
+```
+
+It watches `.html`, `.htm`, `.ejs`, `.js`, `.css` and `.json` files under the project root,
+ignoring `node_modules`, `.git`, `dist` and the compiled output itself. A build that fails
+does not stop the watcher &mdash; fix the file, save, and it rebuilds.
+
+It accepts the same `--projectRoot`, `--config` and `--outputFile` options as
+`ifc compile`, plus `--debounce` (milliseconds to wait after a change before rebuilding,
+default 150).
 
 ### `ifc show --snippets`
 
