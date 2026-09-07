@@ -52,10 +52,54 @@ It also contains the following methods:
 |`getSnippet(id)`|The name of a snippet|Returns the requested snippet object or undefined if none exists with this ID.|
 |`renderSnippet(id)`|The name of a snippet|Renders the snippet with the given id, returning the rendered HTML as a string.|
 |`showSnippet(id, addToHistory = true)`|The name of a snippet, and whether to add the snippet to the history|Changes the snippet currently shown on screen, and returns true if the snippet was found and shown, false otherwise.|
+|`onLeave(fn)`|A function taking no arguments|Registers a cleanup to run when the current snippet is left. Handlers fire once, just before the snippet's DOM is replaced, and are then discarded. This is where a snippet should stop anything it started &mdash; timers above all.|
 |`save()`||Returns a JSON object containing 3 keys: `state`, `history` and `checkpoint`. The idea is for the author to use this JSON to save the game (maybe in the browser's local storage or prompt the user to download a file containing it).|
 |`load(data, cb?, landingSnippet?, loadNoHistory = true)`|`data` is what a previous call to `save()` produced, `cb` is a callback that is called right after restoring the state's story, history and checkpoint, receiving the (restored) `story.state` as its sole argument and returning `void`, `landingSnippet` (if provided) is the name of the snippet to show after a successful load instead of the last snippet in the (restored) history (e.g. a "Load Successful" kind of snippet), and `loadNoHistory` dictates whether the snippet that will be shown after a successful load will be added to the story's history|Attempts to load the story using the `data` argument, which should be exactly what `save()` produced. Returns nothing.|
 |`createCheckpoint()`||Caches the current state and history as a checkpoint, so that the author/user can return to it. A subsequent call to `createCheckpoint()` overwrites the previously stored checkpoint.|
 |`restoreCheckpoint(restoreHistory = false, jumpToCheckpoint = true, addToHistory = true)`|`restoreHistory` dictates whether the story's history should be restored (or just the state), `jumpToCheckpoint` controls whether to go to the snippet where the checkpoint was created or to stay at the current snippet, and `addToHistory` dictates whether the snippet that will be shown after restoring the checkpoint will be added to the story's history. Returns `true` if a checkpoint existed and was restored, and `false` if there was no checkpoint. ||
+
+## Snippet lifecycle events
+
+The engine fires two events on `window` around every snippet change. Both are
+passed the snippet object concerned:
+
+|event|when|argument|
+|---|---|---|
+|`iff:snippet:leaving`|just before the outgoing snippet's DOM is replaced|the snippet being left, or `undefined` for the very first snippet of the story|
+|`iff:snippet:shown`|right after the incoming snippet has been rendered|the snippet now on screen|
+
+```js
+$(window).on("iff:snippet:shown", function (event, snippet) {
+    window.scrollTo(0, 0);
+    console.log("now showing", snippet.name);
+});
+```
+
+Register these in a [story script]({{ site.baseurl }}/scripts-styles/), which
+runs once, rather than in global code, which runs on every snippet.
+
+## Cleaning up after a snippet
+
+A snippet that starts a timer owns that timer. Nothing stops it when the player
+navigates away, so it keeps firing against DOM nodes that no longer exist.
+`story.onLeave()` is the fix:
+
+```ejs
+<%
+    $(function () {
+        const timer = setInterval(tick, 200);
+        story.onLeave(function () {
+            clearInterval(timer);
+        });
+    });
+%>
+```
+
+Handlers registered this way run exactly once, when the snippet is left, and
+are then cleared &mdash; so each visit to the snippet registers afresh. See the
+[lifecycle example](https://github.com/sniarchos/iffinity/tree/HEAD/examples/lifecycle),
+which demonstrates both the events and `onLeave`, and checks at runtime that
+the timer really stopped.
 
 ## The `snippet` object
 

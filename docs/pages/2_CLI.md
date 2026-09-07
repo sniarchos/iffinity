@@ -154,6 +154,8 @@ Options:
   -s, --snippets     Show all snippets in the project                  [boolean]
   -t, --tags         Show all tags in the project                      [boolean]
   -g, --graph        Show the snippet graph of the project             [boolean]
+      --open         Open the generated snippet graph in your browser
+                     (--no-open to skip)             [boolean] [default: true]
   -v, --version      Show iffinity engine version number               [boolean]
   -h, --help         Show help                                         [boolean]
 ```
@@ -203,4 +205,21 @@ Tags in project Three Snippets
 
 ### `ifc show --graph`
 
-This is an **EXPERIMENTAL** option. Running it will open a browser window with an interactive graph of the story snippets and their links. The starting snippet is drawn in blue, while all others in green. Interactive *doesn't* mean editable; there is no way to affect the project via the graph. In other words, it is a read-only view of the project.
+The `--graph/-g` option writes an interactive graph of the story's snippets and their links to
+`snippet-graph.html` in the project root, and opens it in your default browser. Pass `--no-open` to write the file
+without opening it (useful over SSH or in CI).
+
+The graph is a read-only view; there is no way to affect the project through it. Nodes are coloured by kind:
+
+|colour|meaning|
+|---|---|
+|amber|the starting snippet|
+|green|a snippet defined in the project|
+|red|a snippet that is **linked to but never defined**|
+
+Those red nodes are worth paying attention to: a link pointing at a snippet that does not exist is a dead end in
+your story, and the command also lists every one of them on the terminal. Edges to a missing snippet are drawn
+dashed and red.
+
+Transitions made in code with `story.showSnippet()` are invisible to the graph unless you declare them with the
+[`<iff-link>` tag]({{ site.baseurl }}/story/#the-iff-link-tag).

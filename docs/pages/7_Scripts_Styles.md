@@ -20,7 +20,7 @@ These files are defined in the `libraries.{scripts,styles}` fields of the config
 
 ## The story scripts/stylesheets
 
-These are JS/CSS script files that are defined in the `{scripts,styles}.story` fields of the configuration file. The JS scripts **run once at the beginning of the story** (i.e., when the player initially loads the game on their browser). Also, **they run before all scripts of lower levels**. This is the place for initializing the story's state, for example. The stylesheets define the default style of the whole story (can be overridden by stylesheets of subsequent levels, of course).
+These are JS/CSS script files that are defined in the `{scripts,styles}.story` fields of the configuration file. The JS scripts **run once at the beginning of the story** (i.e., when the player initially loads the game on their browser). Also, **they run before all scripts of lower levels**. This is the place for initializing the story's state, and for registering [snippet lifecycle event handlers]({{ site.baseurl }}/author-api/#snippet-lifecycle-events) &mdash; register those here rather than in global code, which would re-bind them on every snippet. The stylesheets define the default style of the whole story (can be overridden by stylesheets of subsequent levels, of course).
 
 ## The global scripts
 

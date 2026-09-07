@@ -12,6 +12,8 @@ nav_order: 1
 
 ## Installation
 
+iffinity requires **Node.js 20.18.1 or newer**.
+
 You can install the iffinity engine via the npm registry:
 
 ```

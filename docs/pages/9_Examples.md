@@ -41,6 +41,17 @@ Here, you can play around with the examples that come with iffinity.
             <td><a href="{{ site.baseurl }}/examples/multfiles/">Demo</a></td>
         </tr>
         <tr>
+            <td><strong>Lifecycle</strong></td>
+            <td>
+                Demonstrates the snippet lifecycle events and
+                <code>story.onLeave()</code>. A snippet starts a timer, hands
+                the engine its cleanup, and the next snippet checks at runtime
+                that the timer actually stopped.
+            </td>
+            <td><a href="https://github.com/sniarchos/iffinity/tree/HEAD/examples/lifecycle">Code</a></td>
+            <td><a href="{{ site.baseurl }}/examples/lifecycle/">Demo</a></td>
+        </tr>
+        <tr>
             <td><strong>linebreak</strong></td>
             <td>
                 An example used to test the linebreaks that may be introduced
