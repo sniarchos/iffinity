@@ -2,7 +2,6 @@ import { green, red, yellow } from "ansis/colors";
 import { Config, asArray } from "../types/Config";
 import fs from "fs";
 import path from "path";
-import $ from "cheerio";
 import * as cheerio from "cheerio";
 
 export function checkConfig(
@@ -146,7 +145,7 @@ export function performInitialSanityChecks(
     }
 
     let numUnnamedSnippets = userSnippets.filter((_, snippet) => {
-        const name = $(snippet).attr("name");
+        const name = snippet.attribs?.name;
         return !name || name.trim().length === 0;
     }).length;
     if (numUnnamedSnippets > 0) {
@@ -169,7 +168,7 @@ export function performInitialSanityChecks(
         if (numStartingSnippets > 1) {
             console.error("Multiple starting snippets found:");
             userSnippets.filter("[start]").each((_, snippet) => {
-                console.error(`- ${$(snippet).attr("name")}`);
+                console.error(`- ${snippet.attribs?.name}`);
             });
         }
         console.error(
