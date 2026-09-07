@@ -1,12 +1,13 @@
 import fs from "fs";
 import path from "path";
 import * as cheerio from "cheerio";
+import type { Element } from "domhandler";
 
 import { Config, asArray } from "../types/Config";
 import { encode } from "html-entities";
 
 function parseTagScriptsAndStyles(
-    snippetDataElem: cheerio.Cheerio<cheerio.Element>,
+    snippetDataElem: cheerio.Cheerio<Element>,
     tagList: string,
     config: Config,
     projectRootPath: string,
@@ -71,7 +72,7 @@ function parseTagScriptsAndStyles(
  *          from the filenames to the file contents.
  */
 export function parseTagsScriptsAndStyles(
-    snippetDataElem: cheerio.Cheerio<cheerio.Element>,
+    snippetDataElem: cheerio.Cheerio<Element>,
     config: Config,
     projectRootPath: string
 ): [Map<string, string>, Map<string, string>] {
@@ -273,7 +274,7 @@ function evaluateExpressionTree(
  * evaluateTagRule("a && b", "a"); // false
  * evaluateTagRule("a && b b", "a b"); // throws TokenizationError
  */
-function evaluateTagRule(rule: string, tagList: string): boolean {
+export function evaluateTagRule(rule: string, tagList: string): boolean {
     const tags = tagList
         .trim()
         .split(/ +/)

@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import * as cheerio from "cheerio";
+import type { Element } from "domhandler";
 import { bold, red, yellow } from "ansis/colors";
 import { HtmlValidate, Result } from "html-validate";
 import { Config } from "../types/Config";
@@ -75,6 +76,72 @@ function compileIdsAndClassesShorthands(
     return `<${tag} ${attrs.join(" ")}`;
 }
 
+/**
+ * The `[[link]]` and `<tag#id.class>` rewrites are plain regexes over the raw
+ * file. Without protection they also fire inside EJS blocks and `<script>`
+ * bodies, where they silently corrupt the author's JavaScript: `i<arr.length`
+ * becomes `i<arr class="length"`, and `arr[[i]]` becomes an anchor. Neither
+ * raises an error; the snippet simply comes out mangled.
+ *
+ * So lift those regions out, rewrite what remains, and put them back.
+ * Sentinels use the Unicode private use area, which cannot occur in real
+ * source.
+ */
+const MASK_OPEN = "\uE000";
+const MASK_CLOSE = "\uE001";
+const MASKABLE = /<%[\s\S]*?%>|<script\b[\s\S]*?<\/script\s*>/gi;
+const MASK_REF = new RegExp(MASK_OPEN + "([0-9]+)" + MASK_CLOSE, "g");
+
+/**
+ * Masked regions live here for the whole compile. They must survive not only
+ * the regex rewrites but also every cheerio parse -- an HTML parser will
+ * happily read `<arr.length` inside an EJS block as a tag and restructure the
+ * document around it.
+ */
+let codeStash: string[] = [];
+
+export function resetCodeStash(): void {
+    codeStash = [];
+}
+
+function maskCode(src: string): string {
+    return src.replace(MASKABLE, (match) => {
+        codeStash.push(match);
+        return MASK_OPEN + (codeStash.length - 1) + MASK_CLOSE;
+    });
+}
+
+/**
+ * Put the masked code back, HTML-escaped. Escaping matches what cheerio would
+ * have produced had it parsed the code as text, and the engine reverses it
+ * with `decode()` before handing the snippet to EJS -- so this works in
+ * attribute positions too.
+ */
+export function unmaskCode(src: string): string {
+    return src.replace(MASK_REF, (_m, i) => escapeAsText(codeStash[Number(i)]));
+}
+
+/**
+ * Escape exactly what an HTML serializer escapes in a text node -- no more.
+ * Matching it byte for byte keeps output stable, and the engine's `decode()`
+ * reverses it before EJS sees the code.
+ */
+function escapeAsText(code: string): string {
+    return code
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+/**
+ * Apply the authoring shorthands to one file's source, leaving code untouched.
+ */
+export function compileAuthoringSyntax(src: string): string {
+    return maskCode(src)
+        .replace(/\[\[([^\]]*)\]\]/g, compileSnippetLinks)
+        .replace(/<([\w-]+)([^>]*?)(?=[> ])/g, compileIdsAndClassesShorthands);
+}
+
 // attempts to resolve the path relative to the snippet file
 function resolveSnippetFilePath(filePath: string, snippetPath: string): string {
     let resolvedPath = path.resolve(path.dirname(snippetPath), filePath);
@@ -84,7 +151,7 @@ function resolveSnippetFilePath(filePath: string, snippetPath: string): string {
 // maps the resolveSnippetFilePath function to the "scripts" and
 // "styles" attributes to resolve any possibly relative paths to the snippet
 function resolveSnippetFilePaths(
-    snippet: cheerio.Cheerio<cheerio.Element>,
+    snippet: cheerio.Cheerio<Element>,
     filePath: string
 ) {
     if (snippet.attr("scripts") !== undefined)
@@ -133,13 +200,9 @@ async function _readAllHtmlAndEjsFilesUnder(
             // If it's a file, check the extension
             const extname = path.extname(filePath);
             if ([".html", ".htm", ".ejs"].includes(extname)) {
-                const src = fs
-                    .readFileSync(filePath, "utf8")
-                    .replace(/\[\[([^\]]*)\]\]/g, compileSnippetLinks)
-                    .replace(
-                        /<([\w-]+)([^>]*?)(?=[> ])/g,
-                        compileIdsAndClassesShorthands
-                    );
+                const src = compileAuthoringSyntax(
+                    fs.readFileSync(filePath, "utf8")
+                );
                 allContent.push(src);
                 snippetFiles.push(filePath);
             }

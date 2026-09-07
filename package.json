@@ -9,14 +9,17 @@
     "main": "dist/backend/cli.js",
     "types": "dist/backend/cli.d.ts",
     "engines": {
-        "node": ">=10"
+        "node": ">=18"
     },
     "files": [
         "dist/",
         "examples/"
     ],
     "scripts": {
-        "build": "tsc && webpack --config webpack.config.js"
+        "build": "tsc && webpack --config webpack.config.js",
+        "test": "tsc -p tsconfig.test.json && node --test \".test-build/tests/*.test.js\"",
+        "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+        "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\""
     },
     "bin": {
         "ifc": "dist/backend/cli.js"
@@ -25,7 +28,6 @@
     "author": "Sotiris Niarchos",
     "license": "MIT",
     "devDependencies": {
-        "@types/cheerio": "^0.22.32",
         "@types/ejs": "^3.1.3",
         "@types/jquery": "^3.5.20",
         "@types/node": "^20.8.2",
@@ -33,17 +35,18 @@
         "ejs": "^3.1.9",
         "expose-loader": "^4.1.0",
         "jquery": "^3.7.1",
+        "prettier": "3.9.6",
         "typescript": "^5.2.2",
         "webpack": "^5.88.2",
         "webpack-cli": "^5.1.4"
     },
     "dependencies": {
         "ansis": "^1.5.6",
-        "cheerio": "^1.0.0-rc.12",
+        "cheerio": "^1.2.0",
+        "domhandler": "^5.0.3",
         "flexible-tree-printer": "^1.0.2",
         "html-entities": "^2.4.0",
         "html-validate": "^8.7.0",
-        "puppeteer": "^21.3.8",
         "yargs": "^17.7.2"
     }
 }

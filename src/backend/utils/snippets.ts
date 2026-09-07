@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import * as cheerio from "cheerio";
+import type { Element } from "domhandler";
 import { encode } from "html-entities";
 
 /**
@@ -17,7 +18,7 @@ import { encode } from "html-entities";
  *          from the filenames to the file contents.
  */
 export function parseSnippetCodeAndStyle(
-    snippetDataElem: cheerio.Cheerio<cheerio.Element>,
+    snippetDataElem: cheerio.Cheerio<Element>,
     projectRootPath: string
 ): [Map<string, string>, Map<string, string>] {
     const updatedScriptsAttribute = [];

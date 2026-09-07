@@ -3,6 +3,7 @@ import { Config, asArray } from "../types/Config";
 import fs from "fs";
 import path from "path";
 import * as cheerio from "cheerio";
+import type { Element } from "domhandler";
 
 export function checkConfig(
     config: Config | undefined,
@@ -119,7 +120,7 @@ export function checkConfig(
 }
 
 export function performInitialSanityChecks(
-    userSnippets: cheerio.Cheerio<cheerio.Element>,
+    userSnippets: cheerio.Cheerio<Element>,
     numUserFiles: number
 ) {
     console.groupCollapsed("Basic sanity checks");

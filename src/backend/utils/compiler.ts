@@ -1,7 +1,12 @@
 import fs from "fs";
 import path from "path";
 import * as cheerio from "cheerio";
-import { readAllHtmlAndEjsFilesUnder } from "./crawler";
+import type { Element } from "domhandler";
+import {
+    readAllHtmlAndEjsFilesUnder,
+    resetCodeStash,
+    unmaskCode,
+} from "./crawler";
 import { performInitialSanityChecks } from "./checks";
 import { loadConfigFile } from "./config";
 import { parseTagsScriptsAndStyles } from "./tags";
@@ -20,6 +25,7 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
             .replace(/[ -]/g, "_")
             .replace(/[^a-zA-Z0-9_]/g, "") + ".html";
 
+    resetCodeStash();
     let [allUserSource, allUserFiles] = await readAllHtmlAndEjsFilesUnder(
         projectRootPath,
         config
@@ -36,6 +42,7 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title></title>
 </head>
 <body>
@@ -59,7 +66,7 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
 
         let snippetDataElem = $(
             '<div class="iff-snippet-data"></div>'
-        ) as cheerio.Cheerio<cheerio.Element>;
+        ) as cheerio.Cheerio<Element>;
         snippetDataElem.html(snippetElem.html() ?? "");
         // remove all <iff-link> elements from the snippet
         snippetDataElem.find("iff-link").remove();
@@ -259,7 +266,9 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
         )
     );
 
-    fs.writeFile(outputFilePath, outputHTML.html(), (err) => {
+    // Restore author code (HTML-escaped, which the engine reverses with decode())
+    // only now, on the way out
+    fs.writeFile(outputFilePath, unmaskCode(outputHTML.html()), (err) => {
         if (err) {
             console.error("Error writing to the output file:", err);
             return;
