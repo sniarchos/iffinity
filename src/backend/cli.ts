@@ -68,6 +68,42 @@ yargs
         }
     )
     .command(
+        "watch [options]",
+        "Recompile the project whenever a source file changes",
+        (yargs) => {
+            yargs
+                .option("projectRoot", {
+                    alias: "p",
+                    describe:
+                        "The root directory of the project (if not specified, the current directory is used)",
+                    type: "string",
+                })
+                .option("config", {
+                    alias: "c",
+                    describe:
+                        "Specify a configuration file for your project (default: <projectRoot>/iff-config.json)",
+                    type: "string",
+                })
+                .option("outputFile", {
+                    alias: "o",
+                    describe: "The output HTML file path",
+                    type: "string",
+                })
+                .option("debounce", {
+                    describe:
+                        "Milliseconds to wait after a change before rebuilding",
+                    type: "number",
+                    default: 150,
+                })
+                .example("$0 watch", "")
+                .example("$0 watch -p ./my-story", "");
+        },
+        async (argv) => {
+            const watcher = await import("./utils/watcher");
+            await watcher.watchProject(argv);
+        }
+    )
+    .command(
         "init",
         "Create a new iffinity project in the current directory",
         {},
