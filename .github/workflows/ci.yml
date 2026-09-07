@@ -1,0 +1,68 @@
+name: CI
+
+on:
+    push:
+        branches: [main, dev]
+    pull_request:
+    # Run by hand from the Actions tab to check that the published package
+    # still installs and compiles against current dependency versions.
+    workflow_dispatch:
+
+jobs:
+    build-and-test:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                node: [18, 20, 22]
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-node@v5
+              with:
+                  node-version: ${{ matrix.node }}
+                  cache: npm
+            - run: npm ci
+            - run: npm run format:check
+            - run: npm run build
+            - run: npm test
+            - name: Compile every bundled example
+              run: |
+                  set -e
+                  for dir in examples/*/; do
+                    [ -f "$dir/iff-config.json" ] || continue
+                    echo "--- compiling $dir"
+                    (cd "$dir" && node "$GITHUB_WORKSPACE/dist/backend/cli.js" compile -o /tmp/out.html)
+                  done
+
+    # Installs the package exactly the way a user would -- from a tarball,
+    # with no lockfile -- so dependency ranges are resolved fresh. A green
+    # build-and-test job says nothing about this; only this job does.
+    published-package:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+            - uses: actions/setup-node@v5
+              with:
+                  node-version: 22
+                  cache: npm
+            - run: npm ci
+            - run: npm run build
+            - name: Pack and install as a user would
+              run: |
+                  set -e
+                  TARBALL="$(npm pack --silent | tail -n 1)"
+                  mkdir -p /tmp/consumer && cd /tmp/consumer
+                  npm init -y >/dev/null
+                  npm install "$GITHUB_WORKSPACE/$TARBALL"
+                  echo "resolved dependency versions:"
+                  npm ls --all || true
+            - name: The installed CLI must actually compile something
+              run: |
+                  set -e
+                  cd /tmp/consumer
+                  cp -r "$GITHUB_WORKSPACE/examples/simple" ./story
+                  cd story
+                  ../node_modules/.bin/ifc compile -o /tmp/smoke.html
+                  test -s /tmp/smoke.html
+                  grep -q 'iff-snippet-data' /tmp/smoke.html
+                  echo "OK: freshly installed package compiles a story"

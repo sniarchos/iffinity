@@ -1,6 +1,10 @@
 .vscode
 node_modules
 dist
+.test-build
+
+# npm pack output
+*.tgz
 
 # mac :(
 .DS_Store
