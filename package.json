@@ -9,7 +9,7 @@
     "main": "dist/backend/cli.js",
     "types": "dist/backend/cli.d.ts",
     "engines": {
-        "node": ">=18"
+        "node": ">=20.18.1"
     },
     "files": [
         "dist/",

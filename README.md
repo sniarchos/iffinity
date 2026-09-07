@@ -25,7 +25,7 @@ iffinity is (or, at least, attempts to be) a solution to this problem. It gets e
 
 #### Installation
 
-iffinity is written in Node.js with TypeScript, so you need to have Node.js installed on your computer in order to use it. If you don't have Node.js installed, you can download it from [here](https://nodejs.org/en/download/).
+iffinity is written in Node.js with TypeScript, so you need to have Node.js installed on your computer in order to use it. **Node.js 20.18.1 or newer is required.** If you don't have Node.js installed, you can download it from [here](https://nodejs.org/en/download/).
 
 Once you have Node.js installed, you can install iffinity by running the following command in your terminal:
 
