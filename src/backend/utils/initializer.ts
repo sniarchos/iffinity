@@ -17,7 +17,7 @@ export async function initializeProject() {
     console.log('It only covers the (required) "story" section of the file.');
     console.log();
     console.log(
-        "See https://zehanort.github.io/iffinity/ for definitive documentation"
+        "See https://sniarchos.github.io/iffinity/ for definitive documentation"
     );
     console.log("on all possible fields and exactly what they do.");
     console.log();

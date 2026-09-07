@@ -12,7 +12,7 @@ nav_order: 3
 
 Heavily inspired by [Twine](https://twinery.org/) and its [Snowman](https://videlais.github.io/snowman/#/) story format, every iffinity Story is made out of **Snippets** (the same as Twine's passages, but "snippets" sounds more minimal).
 
-For some examples of iffinity projects, see the [examples folder](https://github.com/zehanort/iffinity/tree/main/examples).
+For some examples of iffinity projects, see the [examples folder](https://github.com/sniarchos/iffinity/tree/HEAD/examples).
 
 ## Project structure
 

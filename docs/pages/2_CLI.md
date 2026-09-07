@@ -164,7 +164,7 @@ The `show` commands aims to help the user gain insight on their project, especia
 
 The `--snippets/-s` option shows a tree of each file in the project that contains at least one snippet, accompanied by the details of each snippet (name, tags, scripts, styles, whether it is the starting snippet).
 
-Running it on the [convoluted example](https://github.com/zehanort/iffinity/tree/main/examples/convoluted):
+Running it on the [convoluted example](https://github.com/sniarchos/iffinity/tree/HEAD/examples/convoluted):
 
 ```
 $ ifc show --snippets
@@ -187,7 +187,7 @@ Snippets in project Three Snippets
 
 The `--tags/-t` option shows a list of all the tags in the project, accompanied by the list of all the snippets that contain them.
 
-Running it on the [convoluted example](https://github.com/zehanort/iffinity/tree/main/examples/convoluted):
+Running it on the [convoluted example](https://github.com/sniarchos/iffinity/tree/HEAD/examples/convoluted):
 
 ```
 $ ifc show --tags

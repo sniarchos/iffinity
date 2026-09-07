@@ -19,7 +19,7 @@ Every snippet can have 0 or more tags:
 
 The author can define rules in the configuration file, that bind the snippets that satisfy them to certain scripts and/or styles.
 
-Let's take a look at the configuration file of the [convoluted example](https://github.com/zehanort/iffinity/tree/main/examples/convoluted):
+Let's take a look at the configuration file of the [convoluted example](https://github.com/sniarchos/iffinity/tree/HEAD/examples/convoluted):
 
 ```javascript
 {

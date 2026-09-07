@@ -137,7 +137,7 @@ This is an example of the simplest possible configuration file:
 }
 ```
 
-And this is the configuration file of the [convoluted example](https://github.com/zehanort/iffinity/blob/main/examples/convoluted/iff-config.json):
+And this is the configuration file of the [convoluted example](https://github.com/sniarchos/iffinity/blob/HEAD/examples/convoluted/iff-config.json):
 
 ```json
 {

@@ -2,7 +2,7 @@
     "name": "iffinity",
     "repository": {
         "type": "git",
-        "url": "https://github.com/zehanort/iffinity.git"
+        "url": "https://github.com/sniarchos/iffinity.git"
     },
     "version": "1.0.0",
     "description": "A minimal IF engine with iffinite capabilities",
