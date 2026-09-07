@@ -4,6 +4,7 @@
 </picture>
 
 [![npm version](https://badge.fury.io/js/iffinity.svg)](https://badge.fury.io/js/iffinity)
+[![CI](https://github.com/sniarchos/iffinity/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sniarchos/iffinity/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## A minimal engine for browser, choice/hypertext based interactive fiction, with iffinite possibilities!
@@ -139,9 +140,10 @@ Similar to Twine, an iffinity project is a `Story` that consists of `Snippet`s (
 The author writes HTML files where each snippet is defined by a `<snippet>` tag. The `name` attribute of the tag is the name of the snippet, and the `start` attribute indicates that this snippet is the starting snippet of the story. The content of the tag is the HTML code of the snippet, including [EJS](https://ejs.co/) code that is evaluated when the snippet is shown.
 
 Once again, similar to Twine/Snowman, the author can use double square brackets to create links to other snippets. There are 3 types of links and all can be seen in the example above:
- - `[[Land of Opportunity]]` is a link to the snippet with name "Land of Opportunity".
- - `[[just go back|Start]]` is a link to the snippet with name "Start", but the link text is "just go back".
- - `[[rich||#rich.back]]` is a plain `<a>` link that doesn't point to any snippet. However, it has an `id` (`rich`) and a `class` (`back`), so it can be selected via JavaScript (e.g. using jQuery) and used to do something when it is clicked (e.g. could show/hide some `<div>` or, as it happens here, go to a different snippet with `story.showSnippet()` after modifying the state `s` of the story).
+
+- `[[Land of Opportunity]]` is a link to the snippet with name "Land of Opportunity".
+- `[[just go back|Start]]` is a link to the snippet with name "Start", but the link text is "just go back".
+- `[[rich||#rich.back]]` is a plain `<a>` link that doesn't point to any snippet. However, it has an `id` (`rich`) and a `class` (`back`), so it can be selected via JavaScript (e.g. using jQuery) and used to do something when it is clicked (e.g. could show/hide some `<div>` or, as it happens here, go to a different snippet with `story.showSnippet()` after modifying the state `s` of the story).
 
 ### Is that it?
 

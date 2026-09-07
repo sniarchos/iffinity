@@ -17,7 +17,7 @@
     ],
     "scripts": {
         "build": "tsc && webpack --config webpack.config.js",
-        "test": "tsc -p tsconfig.test.json && node --test \".test-build/tests/*.test.js\"",
+        "test": "tsc -p tsconfig.test.json && cd .test-build && node --test",
         "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
         "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\""
     },
