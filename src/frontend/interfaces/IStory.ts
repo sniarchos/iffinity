@@ -29,7 +29,8 @@ export interface IStory {
     getSnippet(id: string | number): ISnippet | undefined;
     getStartingSnippet(): ISnippet | undefined;
     renderSnippet(id: string | number): string;
-    showSnippet(id: string | number, addToHistory?: boolean): void;
+    showSnippet(id: string | number, addToHistory?: boolean): boolean;
+    onLeave(fn: () => void): void;
     start(): void;
 
     save(): SaveObj;

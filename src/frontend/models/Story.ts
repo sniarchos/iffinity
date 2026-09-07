@@ -17,6 +17,8 @@ export class Story implements IStory {
     gcode?: string;
     authorScripts: Map<string, string> = new Map();
     authorStyles: Map<string, string> = new Map();
+    /** cleanups registered by the current snippet, run when it is left */
+    private leaveHandlers: Array<() => void> = [];
 
     constructor(
         title: string,
@@ -114,13 +116,19 @@ export class Story implements IStory {
             s: this.state,
             f: this.funcs,
         };
+        // Clear the story code *before* rendering. If this snippet renders
+        // another one inline, the nested call would otherwise still see
+        // `this.scode` set and execute the story code a second time.
+        const scode = this.scode;
+        this.scode = undefined;
+
         let renderedSnippetHTML = ejs.render(
             // render the {tag,script}-specific styles
             snippet.styles
                 .map((s) => "<style>" + this.authorStyles.get(s) + "</style>")
                 .join("\n") +
                 // render the story code (only once at the beginning, if it exists)
-                (this.scode ? "<% " + this.scode + "%>\n" : "") +
+                (scode ? "<% " + scode + "%>\n" : "") +
                 // render the global code (always, if it exists)
                 (this.gcode ? "<% " + this.gcode + "%>\n" : "") +
                 // render the {tag,script}-specific scripts
@@ -130,8 +138,6 @@ export class Story implements IStory {
                 snippet.source,
             exposedData
         );
-        this.scode = undefined;
-
         return renderedSnippetHTML;
     }
 
@@ -156,13 +162,42 @@ export class Story implements IStory {
             return false;
         }
 
+        const leaving =
+            this.history.length > 0
+                ? this.getSnippet(this.history[this.history.length - 1])
+                : undefined;
+
+        // Let the outgoing snippet clean up (timers, intervals, listeners)
+        // before its DOM is torn down.
+        for (const fn of this.leaveHandlers) {
+            try {
+                fn();
+            } catch (e) {
+                console.error("Error in an onLeave handler:", e);
+            }
+        }
+        this.leaveHandlers = [];
+        $(window).trigger("iff:snippet:leaving", [leaving]);
+
         // add the snippet to the history
         if (addToHistory) this.history.push(snippet.id);
 
-        // render the snippet
+        // render the snippet ($.html() also drops data/handlers of the old DOM)
         $("#iff-snippet").html(this.renderSnippet(snippet.id));
 
+        $(window).trigger("iff:snippet:shown", [snippet]);
+
         return true;
+    }
+
+    /**
+     * Register a cleanup to run when the current snippet is left.
+     * Handlers fire once, before the snippet's DOM is replaced, and are
+     * then discarded. This is the place to clear timers started by a
+     * snippet-specific script, e.g. `story.onLeave(() => clearInterval(t))`.
+     */
+    onLeave(fn: () => void) {
+        this.leaveHandlers.push(fn);
     }
 
     start() {
@@ -175,7 +210,7 @@ export class Story implements IStory {
 
         // setup the click events for all snippet links
         $("#iff-story").on("click", "a[data-snippet]", (event) => {
-            const targetSnippetName = $(event.target).data("snippet");
+            const targetSnippetName = $(event.currentTarget).data("snippet");
             const targetSnippet = this.getSnippet(targetSnippetName);
             if (!targetSnippet) {
                 console.error(
