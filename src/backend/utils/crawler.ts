@@ -117,6 +117,14 @@ function maskCode(src: string): string {
  * with `decode()` before handing the snippet to EJS -- so this works in
  * attribute positions too.
  */
+/**
+ * True if the string contains masked author code, i.e. a value that is only
+ * known once EJS runs. Link checking must not flag those.
+ */
+export function containsMaskedCode(src: string): boolean {
+    return src.includes(MASK_OPEN);
+}
+
 export function unmaskCode(src: string): string {
     return src.replace(MASK_REF, (_m, i) => escapeAsText(codeStash[Number(i)]));
 }

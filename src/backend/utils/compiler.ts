@@ -7,7 +7,7 @@ import {
     resetCodeStash,
     unmaskCode,
 } from "./crawler";
-import { performInitialSanityChecks } from "./checks";
+import { performInitialSanityChecks, checkSnippetLinks } from "./checks";
 import { loadConfigFile } from "./config";
 import { parseTagsScriptsAndStyles } from "./tags";
 import { parseSnippetCodeAndStyle } from "./snippets";
@@ -35,6 +35,7 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
     const userSnippets = $("snippet");
 
     performInitialSanityChecks(userSnippets, allUserFiles.length);
+    checkSnippetLinks(userSnippets, $, config.strictLinks === true);
     console.info("So far so good. Compiling...");
 
     const outputHTML = cheerio.load(

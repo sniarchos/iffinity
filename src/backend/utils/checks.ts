@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
+import { containsMaskedCode } from "./crawler";
 
 export function checkConfig(
     config: Config | undefined,
@@ -178,4 +179,86 @@ export function performInitialSanityChecks(
         process.exit(1);
     }
     console.groupEnd();
+}
+
+/**
+ * Verify that every snippet link resolves to a snippet that exists.
+ *
+ * Twine showed broken links in the editor; iffinity has no editor, so without
+ * this a typo in a link name is only discovered by clicking it. Targets that
+ * are computed at render time (e.g. `[[Continue|<%- dest %>]]`) cannot be
+ * checked and are skipped.
+ *
+ * @returns the number of broken links found
+ */
+export function checkSnippetLinks(
+    userSnippets: cheerio.Cheerio<Element>,
+    $: cheerio.CheerioAPI,
+    strict = false
+): number {
+    const defined = new Set<string>();
+    userSnippets.each((_, snippet) => {
+        const name = snippet.attribs?.name;
+        if (name) defined.add(name.trim());
+    });
+
+    // target -> the snippets that link to it
+    const broken = new Map<string, Set<string>>();
+    let dynamic = 0;
+
+    userSnippets.each((_, snippet) => {
+        const from = (snippet.attribs?.name || "?").trim();
+        const targets: string[] = [];
+
+        $(snippet)
+            .find("a[data-snippet]")
+            .each((_i, a) => {
+                targets.push($(a).attr("data-snippet") ?? "");
+            });
+        $(snippet)
+            .find("iff-link")
+            .each((_i, l) => {
+                targets.push($(l).text());
+            });
+
+        for (const raw of targets) {
+            const target = raw.trim();
+            if (!target) continue;
+            if (containsMaskedCode(target)) {
+                dynamic++;
+                continue;
+            }
+            if (defined.has(target)) continue;
+            if (!broken.has(target)) broken.set(target, new Set());
+            broken.get(target)!.add(from);
+        }
+    });
+
+    if (broken.size === 0) {
+        console.info(
+            `All snippet links resolve` +
+                (dynamic > 0
+                    ? ` (${dynamic} computed at runtime, not checked)`
+                    : "")
+        );
+        return 0;
+    }
+
+    const total = [...broken.values()].reduce((n, s) => n + s.size, 0);
+    const label = strict ? red("Error:") : yellow("Warning:");
+    console.error(
+        `${label} ${total} link(s) point to snippets that do not exist:`
+    );
+    for (const [target, froms] of broken) {
+        console.error(
+            `  ${red(target)} <- linked from ${[...froms]
+                .map((f) => yellow(f))
+                .join(", ")}`
+        );
+    }
+    if (strict) {
+        console.error("Aborting.");
+        process.exit(1);
+    }
+    return total;
 }

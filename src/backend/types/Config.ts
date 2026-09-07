@@ -56,5 +56,11 @@ export type Config = {
         tags?: TagRule[];
     };
 
+    /**
+     * Treat links that point at non-existent snippets as an error rather than
+     * a warning. Off by default so that a half-written story still compiles.
+     */
+    strictLinks?: boolean;
+
     validation?: Record<string, any>;
 };
