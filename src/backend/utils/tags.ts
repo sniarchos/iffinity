@@ -5,6 +5,7 @@ import type { Element } from "domhandler";
 
 import { Config, asArray } from "../types/Config";
 import { encode } from "html-entities";
+import { relativePosix } from "./paths";
 
 function parseTagScriptsAndStyles(
     snippetDataElem: cheerio.Cheerio<Element>,
@@ -30,7 +31,7 @@ function parseTagScriptsAndStyles(
                     );
                 else {
                     const fileContent = fs.readFileSync(filePath, "utf8");
-                    const relFilePath = path.relative(
+                    const relFilePath = relativePosix(
                         projectRootPath,
                         filePath
                     );

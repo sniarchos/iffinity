@@ -3,6 +3,7 @@ import path from "path";
 import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
 import { encode } from "html-entities";
+import { relativePosix } from "./paths";
 
 /**
  * Does 2 things (similar to tags/parseTagsScriptsAndStyles):
@@ -37,7 +38,7 @@ export function parseSnippetCodeAndStyle(
                 resolvedSnippetCodeFile,
                 "utf8"
             );
-            const relFilePath = path.relative(
+            const relFilePath = relativePosix(
                 projectRootPath,
                 resolvedSnippetCodeFile
             );
@@ -57,7 +58,7 @@ export function parseSnippetCodeAndStyle(
                 resolvedSnippetStyleFile,
                 "utf8"
             );
-            const relFilePath = path.relative(
+            const relFilePath = relativePosix(
                 projectRootPath,
                 resolvedSnippetStyleFile
             );
