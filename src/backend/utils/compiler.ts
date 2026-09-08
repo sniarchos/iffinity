@@ -7,13 +7,19 @@ import {
     resetCodeStash,
     unmaskCode,
 } from "./crawler";
-import { performInitialSanityChecks, checkSnippetLinks } from "./checks";
+import {
+    performInitialSanityChecks,
+    checkSnippetLinks,
+    checkTemplates,
+    checkCodeTargets,
+    Template,
+} from "./checks";
 import { loadConfigFile } from "./config";
 import { parseTagsScriptsAndStyles } from "./tags";
 import { parseSnippetCodeAndStyle } from "./snippets";
 import yargs from "yargs";
 import { bold, green, red } from "ansis/colors";
-import { encode } from "html-entities";
+import { decode, encode } from "html-entities";
 import { asArray, concatFileContents } from "../types/Config";
 
 export async function compileProject(argv: yargs.Arguments): Promise<void> {
@@ -63,6 +69,9 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
     let foundTestingSnippet = false;
     const scriptsContents = new Map<string, string>();
     const stylesContents = new Map<string, string>();
+    // everything that must survive `ejs.compile()` before the build is called
+    // a success; collected as we go, checked in one pass at the end
+    const templates: Template[] = [];
 
     userSnippets.each((_, snippet) => {
         const snippetElem = $(snippet);
@@ -139,6 +148,13 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
         const allStyles = snippetDataElem.attr("data-all-styles") as string;
         snippetDataElem.attr("data-styles", allStyles);
         snippetDataElem.removeAttr("data-all-styles");
+
+        // unmask + decode gives back exactly the source the runtime hands EJS
+        templates.push({
+            label: (snippetDataElem.data("name") as string) ?? "(unnamed)",
+            kind: "snippet",
+            source: decode(unmaskCode(snippetDataElem.html() ?? "")),
+        });
 
         storyDataElem.append(snippetDataElem);
     });
@@ -227,6 +243,12 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
         outputHTML("#iff-story-data").append(
             `<div id="iff-story-code" hidden="">${encode(fullStoryCode)}</div>`
         );
+        templates.push({
+            label: asArray(config.scripts.story).join(", "),
+            kind: "story code",
+            source: fullStoryCode,
+            isCode: true,
+        });
     }
 
     /**
@@ -242,6 +264,12 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
                 fullGlobalCode
             )}</div>`
         );
+        templates.push({
+            label: asArray(config.scripts.global).join(", "),
+            kind: "global code",
+            source: fullGlobalCode,
+            isCode: true,
+        });
     }
 
     /**
@@ -258,16 +286,35 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
     /**
      * user scripts & styles
      */
-    scriptsContents.forEach((value, key) =>
+    scriptsContents.forEach((value, key) => {
         outputHTML("#iff-story-data").append(
             `<div class="iff-author-script" data-src="${key}" hidden="">${value}</div>`
-        )
-    );
+        );
+        templates.push({
+            label: key,
+            kind: "script",
+            source: decode(value),
+            isCode: true,
+        });
+    });
     stylesContents.forEach((value, key) =>
         outputHTML("#iff-story-data").append(
             `<div class="iff-author-style" data-src="${key}" hidden="">${value}</div>`
         )
     );
+
+    // Nothing is written unless the whole story compiles: a syntax error here
+    // would otherwise reach the player as a snippet that silently fails to
+    // render, possibly the very first one.
+    checkTemplates(templates);
+
+    // transitions written in code, which the markup link check cannot see
+    const definedNames = new Set<string>();
+    userSnippets.each((_, snippet) => {
+        const name = snippet.attribs?.name;
+        if (name) definedNames.add(name.trim());
+    });
+    checkCodeTargets(templates, definedNames);
 
     // Restore author code (HTML-escaped, which the engine reverses with decode())
     // only now, on the way out

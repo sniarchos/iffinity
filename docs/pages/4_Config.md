@@ -224,3 +224,52 @@ everything beneath it, so `drafts` is enough to drop `drafts/act-one.ejs`.
 `node_modules`, `.git`, `dist`, `.test-build` and `.vscode` are always skipped and need not
 be listed.
 
+## Compile-time template checking
+
+A snippet is compiled by the engine only when the player first reaches it, which used to
+mean that a syntax error in a rarely-visited snippet survived the whole build and showed up
+as a blank screen mid-playthrough. An error in the story code was worse: it took the first
+snippet down with it, so the story would not start at all.
+
+Every snippet, and every story, global and tag/snippet script, is now compiled at build
+time. Nothing is written unless all of them succeed:
+
+```
+All 220 template(s) compile
+```
+
+and a failure names the file, the line and the offending code:
+
+```
+Error: 1 of 220 template(s) do not compile:
+  in script scripts/astronav.js, line 3:
+    Invalid regular expression: missing / while compiling ejs
+    1 | $(function () {
+    2 |     const a = 1;
+    3 >     ctx.moveTo(0.2 <em> W, 0.8 </em> H);
+    4 | });
+```
+
+For a snippet the line is counted from the snippet's own first line, not the enclosing
+file's, since a file may hold many snippets.
+
+This check is not optional: a story that cannot compile cannot be played, so there is
+nothing to trade off. It catches only *syntax* errors &mdash; code that runs but throws is
+still a runtime matter.
+
+## Snippet names used in code
+
+The link check above reads markup, so a transition written in code goes unseen unless you
+also declare it with [`<iff-link>`]({{ site.baseurl }}/story/#the-iff-link-tag) &mdash; easy
+to forget, and easier still to let drift once a snippet is renamed. Snippet names that
+appear as string literals in your code are therefore checked too:
+
+```
+Warning: 1 code reference(s) name snippets that do not exist:
+  Brdige <- named in Bridge Approach
+```
+
+Only literals can be checked. `story.showSnippet(destination)` is a runtime decision, and so
+is `story.showSnippet("Inventory/" + item)`, where the literal is only a prefix; neither is
+flagged. This stays a warning even under `strictLinks`, since the reference may sit on a
+branch that never runs.

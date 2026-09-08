@@ -81,7 +81,9 @@ Config checks
 Basic sanity checks
   Found 2 snippet(s) across 1 file(s).
   Found 1 starting snippet(s).
+All snippet links resolve
 So far so good. Compiling...
+All 2 template(s) compile
 Rendered game saved to test.html. Enjoy!
 ```
 
@@ -90,6 +92,13 @@ happened to run the command in, so `ifc compile -p ../some-story` leaves
 `../some-story/Some_Story.html` behind rather than dropping it on your desk. An explicit
 `--outputFile/-o` is your own path and is used exactly as you typed it, relative to where you
 are standing.
+
+Two of those lines are checks that can stop the build. `All snippet links resolve` reports
+links pointing at snippets that do not exist &mdash; a warning by default, an error with
+[`strictLinks`]({{ site.baseurl }}/config/#the-strictlinks-option). `All N template(s)
+compile` reports that every snippet and every script survived `ejs.compile()`; a syntax
+error there is always fatal, and nothing is written. Both are described under
+[configuration]({{ site.baseurl }}/config/#compile-time-template-checking).
 
 By default every `.html`, `.htm` and `.ejs` file under the project root is compiled into the
 story. Use [`exclude`]({{ site.baseurl }}/config/#the-exclude-option) to keep drafts and
