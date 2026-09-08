@@ -28,7 +28,7 @@ export interface IStory {
     scode?: string;
     getSnippet(id: string | number): ISnippet | undefined;
     getStartingSnippet(): ISnippet | undefined;
-    renderSnippet(id: string | number): string;
+    renderSnippet(id: string | number, runScripts?: boolean): string;
     showSnippet(id: string | number, addToHistory?: boolean): boolean;
     onLeave(fn: () => void): void;
     start(): void;

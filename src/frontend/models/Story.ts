@@ -94,9 +94,18 @@ export class Story implements IStory {
      * - f: the story functions object (alias for this.funcs)
      *
      * @param id the id of the snippet to render (can be a string or a number)
+     * @param runScripts (optional) whether to also run the global, tag- and
+     * snippet-specific scripts that belong to this snippet. Off by default:
+     * those scripts exist to set up a snippet the player is *looking at*, and
+     * they reach for the live document, so running them for a call that only
+     * asks for a string leaves the visible page changed behind your back --
+     * a snippet rendered inline would, for instance, re-add whatever chrome
+     * its tag scripts attach. `showSnippet` passes `true`, because that is a
+     * real visit. Story code is not covered by this flag; it runs once at the
+     * start of the story whatever asks for the first render.
      * @returns the rendered HTML of the snippet (or an empty string if the snippet is not found)
      */
-    renderSnippet(id: string | number): string {
+    renderSnippet(id: string | number, runScripts = false): string {
         const snippet = this.getSnippet(id);
 
         if (!snippet) {
@@ -129,12 +138,15 @@ export class Story implements IStory {
                 .join("\n") +
                 // render the story code (only once at the beginning, if it exists)
                 (scode ? "<% " + scode + "%>\n" : "") +
-                // render the global code (always, if it exists)
-                (this.gcode ? "<% " + this.gcode + "%>\n" : "") +
+                // the global code runs every time a snippet is *shown*, so it
+                // belongs with the scripts below rather than with the story code
+                (runScripts && this.gcode ? "<% " + this.gcode + "%>\n" : "") +
                 // render the {tag,script}-specific scripts
-                snippet.scripts
-                    .map((s) => "<% " + this.authorScripts.get(s) + "%>")
-                    .join("\n") +
+                (runScripts
+                    ? snippet.scripts
+                          .map((s) => "<% " + this.authorScripts.get(s) + "%>")
+                          .join("\n")
+                    : "") +
                 snippet.source,
             exposedData
         );
@@ -183,7 +195,8 @@ export class Story implements IStory {
         if (addToHistory) this.history.push(snippet.id);
 
         // render the snippet ($.html() also drops data/handlers of the old DOM)
-        $("#iff-snippet").html(this.renderSnippet(snippet.id));
+        // a real visit: the snippet's scripts belong to it
+        $("#iff-snippet").html(this.renderSnippet(snippet.id, true));
 
         $(window).trigger("iff:snippet:shown", [snippet]);
 
