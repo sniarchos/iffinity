@@ -130,6 +130,20 @@ Sometimes, snippet transitions happen via code (i.e., using the `story.showSnipp
 </snippet>
 ```
 
+`<iff-link>` is a **compile-time declaration, not an element**. It is stripped from the
+output entirely, so it is not in the DOM and your code cannot
+read anything back out of it at runtime &mdash; `$("iff-link")` finds nothing. Its job is
+done by then: `ifc show --graph` has seen the transition, and the link checker has verified
+that the target exists.
+
+So if a snippet's code needs to know where it is going, the destination has to live
+somewhere that survives compilation. Putting it on the link itself is usually simplest,
+since the engine will then follow it for you:
+
+```ejs
+<a.my-choice href="javascript:void(0)" data-snippet="Snippet B">Go</a>
+```
+
 ## Output file structure
 
 The output HTML has the following general structure:
