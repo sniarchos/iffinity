@@ -38,7 +38,7 @@ export interface IStory {
         data: SaveObj,
         cb?: () => void,
         landingSnippet?: string,
-        loadNoHistory?: boolean
+        addToHistory?: boolean
     ): void;
 
     createCheckpoint(): Checkpoint;

@@ -259,14 +259,19 @@ export class Story implements IStory {
      * The callback function is passed the loaded `StoryState` object.
      * @param landingSnippet (optional) the snippet to show after loading the story state.
      * If this is not provided, the last snippet in the history is shown.
-     * @param loadNoHistory (optional) whether to add the loaded snippet
-     * (i.e., landing snippet or last visited snippet) to the history. (default: true)
+     * @param addToHistory (optional) whether to record the snippet shown after
+     * the load (the landing snippet, or the last visited one) in the history.
+     * Off by default: the restored history already ends where the player was,
+     * so recording again would either duplicate that entry or write a landing
+     * screen -- typically a "Load successful" snippet -- over the player's
+     * actual position. Note that this parameter was called `loadNoHistory`
+     * before iffinity 1.0.0, when it meant the opposite of its name.
      */
     load(
         data: SaveObj,
         cb?: (s: object) => void,
         landingSnippet?: string,
-        loadNoHistory: boolean = true
+        addToHistory: boolean = false
     ) {
         this.state = data.state;
         this.history = data.history;
@@ -274,11 +279,11 @@ export class Story implements IStory {
 
         if (cb) cb(this.state);
 
-        if (landingSnippet) this.showSnippet(landingSnippet, loadNoHistory);
+        if (landingSnippet) this.showSnippet(landingSnippet, addToHistory);
         else
             this.showSnippet(
                 this.history[this.history.length - 1],
-                loadNoHistory
+                addToHistory
             );
     }
 
