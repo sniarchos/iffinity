@@ -315,5 +315,5 @@ yargs
     )
     .alias("v", "version")
     .alias("h", "help")
-    .completion()
+    .completion("completion", "Generate a shell completion script")
     .help().argv;
