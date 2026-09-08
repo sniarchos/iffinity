@@ -43,7 +43,8 @@ yargs
                 })
                 .option("outputFile", {
                     alias: "o",
-                    describe: "The output HTML file path",
+                    describe:
+                        "The output HTML file path (default: <projectRoot>/<Story Title>.html)",
                     type: "string",
                 })
                 .option("testFrom", {
@@ -86,7 +87,8 @@ yargs
                 })
                 .option("outputFile", {
                     alias: "o",
-                    describe: "The output HTML file path",
+                    describe:
+                        "The output HTML file path (default: <projectRoot>/<Story Title>.html)",
                     type: "string",
                 })
                 .option("debounce", {

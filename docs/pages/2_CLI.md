@@ -37,7 +37,8 @@ Options:
                      current directory is used)                         [string]
   -c, --config       Specify a configuration file for your project (default:
                      <projectRoot>/iff-config.json)                     [string]
-  -o, --outputFile   The output HTML file path                          [string]
+  -o, --outputFile   The output HTML file path (default: <projectRoot>/<Story
+                     Title>.html)                                       [string]
   -t, --testFrom     Test the story from a different snippet than the start
                      snippet                                            [string]
   -v, --version      Show iffinity engine version number               [boolean]
@@ -61,7 +62,8 @@ Options:
                      current directory is used)                         [string]
   -c, --config       Specify a configuration file for your project (default:
                      <projectRoot>/iff-config.json)                     [string]
-  -o, --outputFile   The output HTML file path                          [string]
+  -o, --outputFile   The output HTML file path (default: <projectRoot>/<Story
+                     Title>.html)                                       [string]
   -t, --testFrom     Test the story from a different snippet than the start
                      snippet                                            [string]
   -v, --version      Show iffinity engine version number               [boolean]
@@ -82,6 +84,12 @@ Basic sanity checks
 So far so good. Compiling...
 Rendered game saved to test.html. Enjoy!
 ```
+
+The output lands **next to the project it was built from**, not in whatever directory you
+happened to run the command in, so `ifc compile -p ../some-story` leaves
+`../some-story/Some_Story.html` behind rather than dropping it on your desk. An explicit
+`--outputFile/-o` is your own path and is used exactly as you typed it, relative to where you
+are standing.
 
 ### Testing from a different snippet
 

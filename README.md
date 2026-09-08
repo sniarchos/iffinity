@@ -60,7 +60,10 @@ Options:
                      current directory is used)                         [string]
   -c, --config       Specify a configuration file for your project (default:
                      <projectRoot>/iff-config.json)                     [string]
-  -o, --outputFile   The output HTML file path                          [string]
+  -o, --outputFile   The output HTML file path (default: <projectRoot>/<Story
+                     Title>.html)                                       [string]
+  -t, --testFrom     Test the story from a different snippet than the start
+                     snippet                                            [string]
   -v, --version      Show iffinity engine version number               [boolean]
   -h, --help         Show help                                         [boolean]
 ```

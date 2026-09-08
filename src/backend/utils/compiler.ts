@@ -19,11 +19,13 @@ import { asArray, concatFileContents } from "../types/Config";
 export async function compileProject(argv: yargs.Arguments): Promise<void> {
     const projectRootPath = (argv.projectRoot as string) || process.cwd();
     const config = loadConfigFile(argv);
-    let outputFilePath =
-        (argv.outputFile as string) ||
+    const defaultOutputName =
         (config.story.title + (argv.testFrom ? "_from_" + argv.testFrom : ""))
             .replace(/[ -]/g, "_")
             .replace(/[^a-zA-Z0-9_]/g, "") + ".html";
+    let outputFilePath =
+        (argv.outputFile as string) ||
+        path.join(projectRootPath, defaultOutputName);
 
     resetCodeStash();
     let [allUserSource, allUserFiles] = await readAllHtmlAndEjsFilesUnder(
@@ -275,6 +277,11 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
             return;
         }
 
-        console.log(`Rendered game saved to ${bold(outputFilePath)}. Enjoy!`);
+        const shown = path.relative(process.cwd(), outputFilePath);
+        console.log(
+            `Rendered game saved to ${bold(
+                !shown || shown.startsWith("..") ? outputFilePath : shown
+            )}. Enjoy!`
+        );
     });
 }
