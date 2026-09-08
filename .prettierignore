@@ -1,0 +1,9 @@
+# `npm run format` deliberately covers only the TypeScript under src/ and
+# tests/. Everything listed here is either hand-written prose or generated
+# output, and an editor's format-on-save must not rewrite it: Prettier
+# reflows the docs and mangles the Kramdown `{:toc}` directive they rely on,
+# and the example HTML is produced by `ifc`, not by hand.
+*.md
+docs/
+examples/**/*.html
+dist/
