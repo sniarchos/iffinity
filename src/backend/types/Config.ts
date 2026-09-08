@@ -62,5 +62,14 @@ export type Config = {
      */
     strictLinks?: boolean;
 
+    /**
+     * Paths the compiler should not read, relative to the project root.
+     *
+     * `?`, `*` and `**` work as wildcards, and naming a directory excludes
+     * everything under it. `node_modules`, `.git`, `dist`, `.test-build`
+     * and `.vscode` are always skipped and need not be listed.
+     */
+    exclude?: StringOrStringArray;
+
     validation?: Record<string, any>;
 };

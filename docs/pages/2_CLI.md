@@ -91,6 +91,11 @@ happened to run the command in, so `ifc compile -p ../some-story` leaves
 `--outputFile/-o` is your own path and is used exactly as you typed it, relative to where you
 are standing.
 
+By default every `.html`, `.htm` and `.ejs` file under the project root is compiled into the
+story. Use [`exclude`]({{ site.baseurl }}/config/#the-exclude-option) to keep drafts and
+scratch files out; `node_modules`, `.git`, `dist`, `.test-build` and `.vscode` are always
+skipped.
+
 ### Testing from a different snippet
 
 By using the `--testFrom/-t` option, you can instruct `iffinity` to compile your story to an HTML named (by default) `<story name>_from_<testing snippet>.html` where the snippet provided will be the starting snippet instead of the one with the `start` attribute. This facilitates rapid testing of specific snippets without having to change the `start` attribute in your source code every time.

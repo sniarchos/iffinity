@@ -4,7 +4,8 @@ import * as cheerio from "cheerio";
 import type { Element } from "domhandler";
 import { bold, red, yellow } from "ansis/colors";
 import { HtmlValidate, Result } from "html-validate";
-import { Config } from "../types/Config";
+import { Config, asArray } from "../types/Config";
+import { Excluder } from "./ignore";
 
 function compileSnippetLinks(match: string, linkData: string): string {
     const parts = linkData
@@ -190,7 +191,8 @@ function resolveSnippetFilePaths(
 // for any file that ends with .html or .ejs
 // and parse each file to find all the snippets
 async function _readAllHtmlAndEjsFilesUnder(
-    dir: string
+    dir: string,
+    excluder: Excluder
 ): Promise<[string[], string[]]> {
     let allContent: string[] = [];
     let snippetFiles: string[] = [];
@@ -200,11 +202,15 @@ async function _readAllHtmlAndEjsFilesUnder(
         const filePath = path.join(dir, file);
 
         if (fs.statSync(filePath).isDirectory()) {
+            if (excluder.excludesDir(filePath)) continue;
             // If it's a directory, recurse into it
-            const subtreeRes = await _readAllHtmlAndEjsFilesUnder(filePath);
+            const subtreeRes = await _readAllHtmlAndEjsFilesUnder(
+                filePath,
+                excluder
+            );
             allContent = allContent.concat(subtreeRes[0]);
             snippetFiles = snippetFiles.concat(subtreeRes[1]);
-        } else {
+        } else if (!excluder.excludesFile(filePath)) {
             // If it's a file, check the extension
             const extname = path.extname(filePath);
             if ([".html", ".htm", ".ejs"].includes(extname)) {
@@ -224,7 +230,11 @@ export async function readAllHtmlAndEjsFilesUnder(
     dir: string,
     config: Config
 ): Promise<[string, string[]]> {
-    const [allContent, snippetFiles] = await _readAllHtmlAndEjsFilesUnder(dir);
+    const excluder = new Excluder(dir, asArray(config.exclude ?? []));
+    const [allContent, snippetFiles] = await _readAllHtmlAndEjsFilesUnder(
+        dir,
+        excluder
+    );
 
     // build the HTML validator
     const valrules: Record<string, any> = {

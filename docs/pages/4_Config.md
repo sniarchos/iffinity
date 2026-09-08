@@ -201,3 +201,26 @@ By default a broken link is a warning, so a half-written story still compiles. S
 }
 ```
 
+
+## The `exclude` option
+
+Every `.html`, `.htm` and `.ejs` file under the project root is part of the story. That is
+usually what you want, and occasionally exactly what you don't: drafts, notes and scratch
+files kept next to the sources get compiled in alongside them, and a duplicated `start`
+attribute in a forgotten draft will stop the build with a confusing error.
+
+`exclude` lists paths the compiler should not read, relative to the project root:
+
+```json
+{
+    "exclude": ["drafts", "notes/**", "**/*.scratch.ejs"]
+}
+```
+
+Three wildcards are available: `?` matches one character, `*` matches any run of characters
+within a single path segment, and `**` matches across segments. Naming a directory excludes
+everything beneath it, so `drafts` is enough to drop `drafts/act-one.ejs`.
+
+`node_modules`, `.git`, `dist`, `.test-build` and `.vscode` are always skipped and need not
+be listed.
+
