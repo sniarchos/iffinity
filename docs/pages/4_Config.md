@@ -257,6 +257,26 @@ This check is not optional: a story that cannot compile cannot be played, so the
 nothing to trade off. It catches only *syntax* errors &mdash; code that runs but throws is
 still a runtime matter.
 
+## Duplicate ids
+
+html-validate's `no-dup-id` rule is off by default, and iffinity checks the same thing itself
+instead. The reason is that the validator reads one *file* at a time, and a file holds as many
+snippets as you care to put in it. Two snippets reusing `#rest` is perfectly correct &mdash;
+only one of them is ever in the document &mdash; so the rule failed on working stories, and
+whether it failed at all depended on how you had chosen to split your snippets across files.
+
+The check is now per snippet, where a repeated id genuinely is a bug, because `#rest` will
+silently resolve to whichever element came first:
+
+```
+Error: 1 id(s) used more than once inside a snippet:
+  #rest appears 2 times in Start
+```
+
+Ids built by your code (`id="<%- someName %>"`) are skipped, since their value is not known
+until EJS runs. Setting `"no-dup-id": "off"` yourself silences this check too, so a project
+that had already turned the rule off keeps behaving exactly as it did.
+
 ## Snippet names used in code
 
 The link check above reads markup, so a transition written in code goes unseen unless you

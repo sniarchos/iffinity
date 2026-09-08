@@ -242,6 +242,12 @@ export async function readAllHtmlAndEjsFilesUnder(
         "void-style": "off", // for self-closing tags
         "no-raw-characters": "off", // for ejs tags
         "no-inline-style": "off", // too restrictive
+        // A file holds many snippets but only one is ever in the document, so
+        // two snippets may reuse an id perfectly legitimately -- and whether
+        // this rule fired depended on how the author had split their story
+        // across files. Duplicate ids are still checked, per snippet, by
+        // checkDuplicateIds().
+        "no-dup-id": "off",
     };
 
     if (config.validation)

@@ -12,6 +12,7 @@ import {
     checkSnippetLinks,
     checkTemplates,
     checkCodeTargets,
+    checkDuplicateIds,
     Template,
 } from "./checks";
 import { loadConfigFile } from "./config";
@@ -44,6 +45,10 @@ export async function compileProject(argv: yargs.Arguments): Promise<void> {
 
     performInitialSanityChecks(userSnippets, allUserFiles.length);
     checkSnippetLinks(userSnippets, $, config.strictLinks === true);
+    // An author who has explicitly silenced no-dup-id meant it; honour that
+    const dupIdRule = config.validation?.["no-dup-id"];
+    if (dupIdRule !== "off" && dupIdRule !== 0 && dupIdRule !== false)
+        checkDuplicateIds(userSnippets, $);
     console.info("So far so good. Compiling...");
 
     const outputHTML = cheerio.load(

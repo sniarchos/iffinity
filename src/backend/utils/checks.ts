@@ -470,3 +470,64 @@ export function checkCodeTargets(
         );
     return total;
 }
+
+/** A snippet, and the ids it uses more than once. */
+export type DuplicateIds = { snippet: string; ids: Array<[string, number]> };
+
+/**
+ * Find ids used more than once *within a single snippet*.
+ *
+ * html-validate's own `no-dup-id` sees one file at a time, and a file holds
+ * many snippets. Two snippets reusing an id is fine (only one of them is in
+ * the document at a time). Ids built by author code are skipped;
+ * their value is not known until EJS runs.
+ */
+export function findDuplicateIds(
+    userSnippets: cheerio.Cheerio<Element>,
+    $: cheerio.CheerioAPI
+): DuplicateIds[] {
+    const found: DuplicateIds[] = [];
+
+    userSnippets.each((_, snippet) => {
+        const name = (snippet.attribs?.name || "?").trim();
+        const counts = new Map<string, number>();
+
+        $(snippet)
+            .find("[id]")
+            .each((_i, el) => {
+                const id = ($(el).attr("id") ?? "").trim();
+                if (!id || containsMaskedCode(id)) return;
+                counts.set(id, (counts.get(id) ?? 0) + 1);
+            });
+
+        const dups = [...counts].filter(([, n]) => n > 1);
+        if (dups.length > 0) found.push({ snippet: name, ids: dups });
+    });
+
+    return found;
+}
+
+/**
+ * Report duplicate ids within a snippet, and abort if there are any.
+ *
+ * @returns the number of offending ids
+ */
+export function checkDuplicateIds(
+    userSnippets: cheerio.Cheerio<Element>,
+    $: cheerio.CheerioAPI
+): number {
+    const found = findDuplicateIds(userSnippets, $);
+    if (found.length === 0) return 0;
+
+    const total = found.reduce((n, f) => n + f.ids.length, 0);
+    console.error(
+        `${red("Error:")} ${total} id(s) used more than once inside a snippet:`
+    );
+    for (const { snippet, ids } of found)
+        for (const [id, n] of ids)
+            console.error(
+                `  ${red("#" + id)} appears ${n} times in ${yellow(snippet)}`
+            );
+    console.error("Aborting.");
+    process.exit(1);
+}
