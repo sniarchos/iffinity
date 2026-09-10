@@ -42,7 +42,7 @@ The `story` object is the heart of your game. It contains the following useful f
  - `version`,
  - `snippets`: A list with all of the story's snippets (as snippet objects, see next section)
  - `history`: A list of the IDs of all snippets visited by the player so far, in order
- - `state`: An arbitrary object that aims to serve as the story's state. Can also be accessed by the shorthand `s`.
+ - `state`: An arbitrary object that aims to serve as the story's state. Can also be accessed by the shorthand `s`. `load()` and `restoreCheckpoint()` replace its *contents* but never the object itself, so a reference to `s` that your story script holds (inside a helper on `f`, for instance) stays live after a save is loaded.
  - `funcs`: An arbitrary object that aims to serve as a way to define custom functions that have access to the author API. Can also be accessed by the shorthand `f`.
 
 It also contains the following methods:

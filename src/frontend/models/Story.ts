@@ -253,6 +253,17 @@ export class Story implements IStory {
     }
 
     /**
+     * Replace the state's contents but keep the object. The story script's
+     * helpers hold `s` from their first render, so swapping the object would
+     * leave them reading and writing a dead copy after a load.
+     */
+    private replaceState(next: any) {
+        if (next === this.state) return;
+        for (const key of Object.keys(this.state)) delete this.state[key];
+        Object.assign(this.state, next);
+    }
+
+    /**
      *
      * @param data the `StoryState` to load (as returned by `save()`)
      * @param cb (optional) a callback function to call after the story state is loaded.
@@ -273,7 +284,7 @@ export class Story implements IStory {
         landingSnippet?: string,
         addToHistory: boolean = false
     ) {
-        this.state = data.state;
+        this.replaceState(data.state);
         this.history = data.history;
         this.checkpoint = data.checkpoint;
 
@@ -319,7 +330,7 @@ export class Story implements IStory {
     ) {
         if (!this.checkpoint) return false;
 
-        this.state = JSON.parse(JSON.stringify(this.checkpoint.state));
+        this.replaceState(JSON.parse(JSON.stringify(this.checkpoint.state)));
         if (restoreHistory) this.history = [...this.checkpoint.history];
 
         if (jumpToCheckpoint)
